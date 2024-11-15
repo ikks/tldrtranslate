@@ -217,10 +217,6 @@ fn conjugate_to_third(allocator: std.mem.Allocator, line: []const u8) CombinedEr
     var buffer: [80]u8 = undefined; // Buffer to hold ASCII bytes
     @memcpy(buffer[0..verb.len], verb);
 
-    // Print the ASCII encoded values
-    for (buffer[0..verb.len]) |byte| {
-        std.debug.print("({}){c}", .{ byte, byte });
-    }
     const env = try lmdb.Env.init(dbverbspath, .{});
     defer env.deinit();
 
@@ -232,7 +228,6 @@ fn conjugate_to_third(allocator: std.mem.Allocator, line: []const u8) CombinedEr
     defer allocator.free(normalize);
     const wasUpper = std.ascii.isUpper(verb[0]);
     normalize[0] = std.ascii.toLower(normalize[0]);
-    std.debug.print("{s} {c} {d}\n", .{ verb, verb[1], verb[1] });
     const conjugation = tx.get(db, normalize) catch verb;
     if (wasUpper) {
         const result = try std.fmt.allocPrint(allocator, "{c}{s}{s}", .{ std.ascii.toUpper(conjugation[0]), conjugation[1..], line[index_separator..] });
@@ -336,7 +331,11 @@ fn replacemany(original: []const u8, replacements: []const Replacement, output: 
             continue;
         }
         total += found;
-        len = len + found * (replacepair.replacement.len - replacepair.original.len);
+        if (replacepair.replacement.len > replacepair.original.len) {
+            len = len + found * (replacepair.replacement.len - replacepair.original.len);
+        } else {
+            len = len - found * (replacepair.original.len - replacepair.replacement.len);
+        }
         @memcpy(buffer2[0..len], output[0..len]);
     }
     return ReplaceAndSize{ .replacements = total, .size = len };
