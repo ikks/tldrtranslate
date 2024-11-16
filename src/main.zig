@@ -43,7 +43,7 @@ pub fn main() !u8 {
 
     processfile(args[1], allocator) catch |err| {
         if (err == std.posix.OpenError.FileNotFound) {
-            logerr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md", .{});
+            logerr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md\nCulprit was {s}", .{args[1]});
             return err; // Return to signify the end
         } else if (err == std.posix.ConnectError.ConnectionRefused) {
             logerr("Make sure you have an API Argos Translate Running in {s}", .{translation_api});
@@ -68,7 +68,10 @@ fn processfile(filename: []u8, allocator: Allocator) !void {
     };
     const filename_language = try std.fmt.allocPrint(allocator, "{s}.{s}{s}", .{ filename[0 .. ipages + 5], language, filename[ipages + 5 ..] });
     defer allocator.free(filename_language);
-    const file_out = try fs.cwd().createFile(filename_language, .{});
+    const file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
+        logerr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
+        return;
+    };
     defer file_out.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
