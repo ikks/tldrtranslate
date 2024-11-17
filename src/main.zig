@@ -7,6 +7,7 @@ const ReplaceAndSize = tldr.ReplaceAndSize;
 const replacemany = tldr.replacemany;
 const escapeJsonString = tldr.escapeJsonString;
 const conjugate_to_third = tldr.conjugate_to_third;
+const ArgosApiError = tldr.ArgosApiError;
 
 const Allocator = std.mem.Allocator;
 const fs = std.fs;
@@ -18,21 +19,46 @@ const http = std.http;
 const translation_api = "http://localhost:8000/translate";
 const dbverbspath = "/home/igor/playground/python/updatecompjugadb/tldr.db";
 
-// Use ENV VARIABLES to get WORKING DIR and LANGUAGE
 // Separate in file per language? or configuration to make it easier for other languages?
 // Improve memory management, reuse the allocator in the invocation of what?
 
+fn managelang(allocator: Allocator) ![]u8 {
+    var language: []u8 = undefined;
+    language = std.process.getEnvVarOwned(allocator, "TLDR_LANG") catch |err| {
+        if (err == std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
+            const other_value = try std.process.getEnvVarOwned(allocator, "LANG");
+            defer allocator.free(other_value);
+            if (!std.mem.eql(u8, other_value[0..2], "en")) {
+                if (std.mem.eql(u8, other_value[0..2], "pt") or std.mem.eql(u8, other_value[0..2], "zh")) {
+                    std.mem.copyForwards(u8, language, other_value[0..4]);
+                } else {
+                    std.mem.copyForwards(u8, language, other_value[0..2]);
+                }
+                return language;
+            } else {
+                language = try allocator.dupe(u8, "es");
+                return language;
+            }
+        } else {
+            return err;
+        }
+    };
+
+    return language;
+}
+
 pub fn main() !u8 {
-    const language = "es";
+    var language: []u8 = undefined;
     const original_language = "en";
     // Get allocator
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    // Parse args into string array (error union needs 'try')
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
+    language = try managelang(allocator);
+    defer allocator.free(language);
 
     if (args.len != 2) {
         logerr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md", .{});
@@ -255,7 +281,7 @@ fn translatelineapi(allocator: Allocator, source_string: []const u8, original_la
     const uri = try std.Uri.parse(translation_api);
     const escaped_for_json = try escapeJsonString(source_string, allocator);
     defer allocator.free(escaped_for_json);
-    const payload = try std.fmt.allocPrint(allocator, "{{\"text\": \"{s}\", \"from_lang\": \"{s}\", \"to_lang\": \"{s}\"}}", .{ escaped_for_json, original_language, language });
+    const payload = try std.fmt.allocPrint(allocator, "{{\"text\": \"{s}\", \"from_lang\": \"{s}\", \"to_lang\": \"{s}\"}}", .{ escaped_for_json, original_language, language[0..2] });
     defer allocator.free(payload);
 
     var buf: [1024]u8 = undefined;
@@ -275,7 +301,7 @@ fn translatelineapi(allocator: Allocator, source_string: []const u8, original_la
 
     if (req.response.status != .ok) {
         logerr("The API is not prepared for what you asked for. Status:{d}\nPayload:{s}\nResponse:{s}", .{ req.response.status, payload, body });
-        return allocator.dupe(u8, source_string);
+        return ArgosApiError.LangNotFound;
     }
 
     const Translated_text = struct { translated_text: []u8 };

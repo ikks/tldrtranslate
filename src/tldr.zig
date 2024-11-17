@@ -24,6 +24,8 @@ pub const Replacement = struct {
 
 const CombinedError = lmdb.Mdb_Err || error{ OutOfMemory, AllocationFailed };
 
+pub const ArgosApiError = error{LangNotFound};
+
 pub fn conjugate_to_third(allocator: std.mem.Allocator, line: []const u8) CombinedError![]const u8 {
     const index_separator = std.mem.indexOf(u8, line, " ") orelse {
         return allocator.dupe(u8, line);

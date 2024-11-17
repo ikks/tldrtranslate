@@ -21,3 +21,10 @@ Have an Argos API locally, to run it:
 ```
 fastapi dev main
 ```
+
+## Choosing a language
+
+Set your env var TLDR_LANG="xx" replacing xx for your language. Please
+note there is a list of [supported languages by Argos Translate](https://github.com/argosopentech/argos-translate).
+
+## Building a new language
