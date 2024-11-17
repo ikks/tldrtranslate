@@ -1,14 +1,16 @@
 const std = @import("std");
-// const lmdb = @import("lmdb-zig");
+const lmdb = @import("lmdb-zig");
 
 const testing = std.testing;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const Child = std.process.Child;
+const logerr = std.log.err;
 
 const dbverbspath = "/home/igor/playground/python/updatecompjugadb/tldr.db";
 const cmdtranslation = "/home/igor/bin/argos-translate";
 const cmdthirdperson = "/home/igor/bin/tercerapersona";
+const translation_api = "http://localhost:8000/translate";
 
 pub const ReplaceAndSize = struct {
     replacements: usize,
@@ -20,6 +22,41 @@ pub const Replacement = struct {
     replacement: []const u8,
 };
 
+const CombinedError = lmdb.Mdb_Err || error{ OutOfMemory, AllocationFailed };
+
+pub fn conjugate_to_third(allocator: std.mem.Allocator, line: []const u8) CombinedError![]const u8 {
+    const index_separator = std.mem.indexOf(u8, line, " ") orelse {
+        return allocator.dupe(u8, line);
+    };
+    const verb = line[0..index_separator];
+    defer allocator.free(verb);
+    var buffer: [80]u8 = undefined; // Buffer to hold ASCII bytes
+    @memcpy(buffer[0..verb.len], verb);
+
+    const env = lmdb.Env.init(dbverbspath, .{}) catch |err| {
+        if (err == lmdb.Mdb_Err.no_such_file_or_dir) {
+            logerr("Make sure you have access to the verb conjugation db {s}", .{translation_api});
+        }
+        return err;
+    };
+    defer env.deinit();
+
+    const tx = try env.begin(.{});
+    errdefer tx.deinit();
+    const db = try tx.open(null, .{});
+    defer db.close(env);
+    const normalize = try allocator.dupe(u8, verb);
+    defer allocator.free(normalize);
+    const wasUpper = std.ascii.isUpper(verb[0]);
+    normalize[0] = std.ascii.toLower(normalize[0]);
+    const conjugation = tx.get(db, normalize) catch verb;
+    if (wasUpper) {
+        const result = try std.fmt.allocPrint(allocator, "{c}{s}{s}", .{ std.ascii.toUpper(conjugation[0]), conjugation[1..], line[index_separator..] });
+        return result;
+    }
+    const result = try std.fmt.allocPrint(allocator, "{s}{s}", .{ conjugation, line[index_separator..] });
+    return result;
+}
 pub fn replacemany(original: []const u8, replacements: []const Replacement, output: []u8) ReplaceAndSize {
     var found: usize = 0;
     var total: usize = 0;
@@ -42,35 +79,6 @@ pub fn replacemany(original: []const u8, replacements: []const Replacement, outp
     }
     return ReplaceAndSize{ .replacements = total, .size = len };
 }
-
-// export fn conjugate_to_third(allocator: std.mem.Allocator, line: []const u8) CombinedError![]const u8 {
-//     const index_separator = std.mem.indexOf(u8, line, " ") orelse {
-//         return allocator.dupe(u8, line);
-//     };
-//     const verb = try decode_iso_8859_1(allocator, line[0..index_separator]);
-//     defer allocator.free(verb);
-//     var buffer: [80]u8 = undefined; // Buffer to hold ASCII bytes
-//     @memcpy(buffer[0..verb.len], verb);
-
-//     const env = try lmdb.Env.init(dbverbspath, .{});
-//     defer env.deinit();
-
-//     const tx = try env.begin(.{});
-//     errdefer tx.deinit();
-//     const db = try tx.open(null, .{});
-//     defer db.close(env);
-//     const normalize = try allocator.dupe(u8, verb);
-//     defer allocator.free(normalize);
-//     const wasUpper = std.ascii.isUpper(verb[0]);
-//     normalize[0] = std.ascii.toLower(normalize[0]);
-//     const conjugation = tx.get(db, normalize) catch verb;
-//     if (wasUpper) {
-//         const result = try std.fmt.allocPrint(allocator, "{c}{s}{s}", .{ std.ascii.toUpper(conjugation[0]), conjugation[1..], line[index_separator..] });
-//         return result;
-//     }
-//     const result = try std.fmt.allocPrint(allocator, "{s}{s}", .{ conjugation, line[index_separator..] });
-//     return result;
-// }
 
 fn translatelinecmd(allocator: std.mem.Allocator, line: []u8, original_language: []u8, language: []u8) ![]u8 {
     const argv = [_][]const u8{ cmdtranslation, "--from", original_language, "--to", language, line };
