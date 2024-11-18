@@ -29,3 +29,31 @@ pub const LangReplacement = struct {
 };
 
 pub const l_default: LangReplacement = .{ .summary_replacement = no_replacements[0..], .process_replacement = no_replacements[0..] };
+
+pub const supported_default_languages = [_][]const u8{
+    "fr",
+    "ar",
+    "bn",
+    "ar",
+    "ca",
+    "cs",
+    "da",
+    "de",
+    "fa",
+    "fi",
+    "hi",
+    "id",
+    "it",
+    "ja",
+    "ko",
+    "pl",
+    "pt_BR",
+    "pt_PT",
+    "ro",
+    "ru",
+    "sv",
+    "th",
+    "uk",
+    "zh",
+    "zh_TW",
+};

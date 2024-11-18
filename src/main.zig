@@ -7,19 +7,21 @@ const processFile = tldr.processFile;
 
 const LangReplacement = tldr_base.LangReplacement;
 const l_default = tldr_base.l_default;
+const supported_langs = tldr_base.supported_default_languages;
 
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
 const print = std.debug.print;
 const logerr = std.log.err;
+const Writer = std.fs.File.Writer;
 
 // Improve memory management, reuse the allocator in the invocation of what?
 // Add cli options to show supported languges
 // Show help on how to use this with languages
 
-/// The language is established by:
+/// The language is found following these rules:
 /// * tries to use the LANG envvar in case it's not english
-/// * if the TLDR_LANG is set takes that value
+/// * if the TLDR_LANG is set, takes that value
 /// * else defaults to es
 /// It's able to manage pt and zh correctly
 fn managelang(allocator: Allocator) ![]u8 {
@@ -55,6 +57,14 @@ fn managelang(allocator: Allocator) ![]u8 {
     return allocator.dupe(u8, tldr_lang[0..max_size]);
 }
 
+pub fn show_supported_langs(writer: Writer) !void {
+    try writer.print("We do support atm:\n", .{});
+    for (supported_langs) |lang| {
+        try writer.print("  * {s}\n", .{lang});
+    }
+    try writer.print("  * {s}\n", .{"es"});
+}
+
 pub fn main() !u8 {
     var language: []u8 = undefined;
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -76,35 +86,13 @@ pub fn main() !u8 {
     );
     defer replacements.deinit();
     try replacements.put("es", l_es);
-    try replacements.put("fr", l_default);
-    try replacements.put("ar", l_default);
-    try replacements.put("bn", l_default);
-    try replacements.put("ar", l_default);
-    try replacements.put("ca", l_default);
-    try replacements.put("cs", l_default);
-    try replacements.put("da", l_default);
-    try replacements.put("de", l_default);
-    try replacements.put("fa", l_default);
-    try replacements.put("fi", l_default);
-    try replacements.put("hi", l_default);
-    try replacements.put("id", l_default);
-    try replacements.put("it", l_default);
-    try replacements.put("ja", l_default);
-    try replacements.put("ko", l_default);
-    try replacements.put("pl", l_default);
-    try replacements.put("pt_BR", l_default);
-    try replacements.put("pt_PT", l_default);
-    try replacements.put("ro", l_default);
-    try replacements.put("ru", l_default);
-    try replacements.put("sv", l_default);
-    try replacements.put("th", l_default);
-    try replacements.put("tr", l_default);
-    try replacements.put("uk", l_default);
-    try replacements.put("zh", l_default);
-    try replacements.put("zh_TW", l_default);
+    for (supported_langs) |lang| {
+        try replacements.put(lang[0..], l_default);
+    }
 
     if (!replacements.contains(language)) {
-        logerr("We do not support language {s} yet.", .{language});
+        logerr("We do not support language `{s}` yet.", .{language});
+        try show_supported_langs(std.io.getStdErr().writer());
         return 1;
     }
 
@@ -112,10 +100,8 @@ pub fn main() !u8 {
     processFile(allocator, args[1], lang_replacement, language) catch |err| {
         if (err == std.posix.OpenError.FileNotFound) {
             logerr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md\nCulprit was {s}", .{args[1]});
-            return err; // Return to signify the end
-        } else {
-            return err; // Propagate any other errors up the call stack
         }
+        return err;
     };
 
     return 0;

@@ -108,6 +108,8 @@ pub fn escapeJsonString(input: []const u8, allocator: Allocator) ![]u8 {
     return result[0..index]; // Return the escaped string
 }
 
+/// Translates a TLDR file to the specified language using the replacements for the language
+/// Writes the result to the language specified directory.
 pub fn processFile(
     allocator: Allocator,
     filename: []const u8,
