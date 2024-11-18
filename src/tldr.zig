@@ -147,18 +147,10 @@ pub fn processFile(
         }
         switch (line.items[0]) {
             '-' => {
-                if (std.mem.eql(u8, language, "es")) { //TBD: Fix this with proper struct and function pointer
-                    try processDescription(allocator, line.items, language, conjugateToThird, file_out.writer());
-                } else {
-                    try processDescription(allocator, line.items, language, identityFn, file_out.writer());
-                }
+                try processDescription(allocator, line.items, language, replacements.fixPostTranslation, file_out.writer());
             },
             '>' => {
-                if (std.mem.eql(u8, language, "es")) { //TBD: Fix this with proper struct and function pointer
-                    try processSummary(allocator, line.items, replacements.summary_replacement, language, conjugateToThird, file_out.writer());
-                } else {
-                    try processSummary(allocator, line.items, replacements.summary_replacement, language, identityFn, file_out.writer());
-                }
+                try processSummary(allocator, line.items, replacements.summary_replacement, language, replacements.fixPostTranslation, file_out.writer());
             },
             '`' => {
                 try processExecution(line.items, replacements.process_replacement, file_out.writer());

@@ -16,7 +16,7 @@ pub const Replacement = struct {
 
 pub const no_replacements = [_]Replacement{};
 
-pub const PostProcess = fn (allocator: Allocator, line: []const u8) CombinedError![]const u8;
+pub const PostProcess = *const fn (allocator: Allocator, line: []const u8) CombinedError![]const u8;
 
 pub fn identityFn(allocator: Allocator, line: []const u8) CombinedError![]const u8 {
     return allocator.dupe(u8, line);
@@ -25,6 +25,7 @@ pub fn identityFn(allocator: Allocator, line: []const u8) CombinedError![]const 
 pub const LangReplacement = struct {
     process_replacement: []const Replacement,
     summary_replacement: []const Replacement,
+    fixPostTranslation: PostProcess = &identityFn,
 };
 
 pub const l_default: LangReplacement = .{ .summary_replacement = no_replacements[0..], .process_replacement = no_replacements[0..] };

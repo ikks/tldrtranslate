@@ -14,6 +14,8 @@ const print = std.debug.print;
 const logerr = std.log.err;
 
 // Improve memory management, reuse the allocator in the invocation of what?
+// Add cli options to show supported languges
+// Show help on how to use this with languages
 
 /// The language is established by:
 /// * tries to use the LANG envvar in case it's not english

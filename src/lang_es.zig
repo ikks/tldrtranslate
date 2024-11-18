@@ -106,7 +106,7 @@ const summary_replacements = [_]Replacement{
 const sr: []const Replacement = summary_replacements[0..];
 const pr: []const Replacement = process_replacements[0..];
 
-pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr };
+pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr, .fixPostTranslation = &conjugateToThird };
 
 const dbverbspath = "/home/igor/playground/python/updatecompjugadb/tldr.db";
 
