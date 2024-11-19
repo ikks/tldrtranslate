@@ -177,7 +177,7 @@ const processDescription = translateLine;
 
 fn translateLine(allocator: Allocator, source_string: []const u8, language: []const u8, postFn: PostProcess, writer: std.fs.File.Writer) !void {
     var slice: []u8 = undefined;
-    slice = try translateLineBack(allocator, source_string[2..], language);
+    slice = try translateLineApi(allocator, source_string[2..], language);
     defer allocator.free(slice);
 
     const fix_conjugation = postFn(allocator, slice) catch |err| {
@@ -192,8 +192,6 @@ fn translateLine(allocator: Allocator, source_string: []const u8, language: []co
         try writer.print("{s}{s}\n", .{ source_string[0..2], fix_conjugation });
     }
 }
-
-const translateLineBack = translateLineApi;
 
 fn translateLineApi(allocator: Allocator, source_string: []const u8, language: []const u8) ![]u8 {
     var client = http.Client{ .allocator = allocator };
