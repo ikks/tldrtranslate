@@ -18,6 +18,9 @@ const Writer = std.fs.File.Writer;
 // Improve memory management, reuse the allocator in the invocation of what?
 // Add cli options to show supported languges
 // Show help on how to use this with languages
+// TBD TLDR_ES_DB_PATH
+// TBD TLDR_ARGOS_API_PORT
+// TBD TLDR_ARGOS_API_URL_BASE
 
 /// The language is found following these rules:
 /// * tries to use the LANG envvar in case it's not english

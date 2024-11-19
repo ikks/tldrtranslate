@@ -18,7 +18,6 @@ const PostProcess = tldr_base.PostProcess;
 const conjugateToThird = lang_es.conjugateToThird;
 const original_language = tldr_base.original_language;
 
-const cmdtranslation = "/home/igor/bin/argos-translate";
 pub const translation_api = "http://localhost:8000/translate";
 
 pub const ArgosApiError = error{LangNotFound};
@@ -48,25 +47,6 @@ pub fn replaceMany(original: []const u8, replacements: []const Replacement, outp
         @memcpy(buffer2[0..len], output[0..len]);
     }
     return ReplaceAndSize{ .replacements = total, .size = len };
-}
-
-fn translateLineCmd(allocator: std.mem.Allocator, line: []u8, language: []u8) ![]u8 {
-    const argv = [_][]const u8{ cmdtranslation, "--from", original_language, "--to", language, line };
-    var child = Child.init(&argv, allocator);
-    child.stdout_behavior = .Pipe;
-    child.stderr_behavior = .Pipe;
-
-    var stdout_ = ArrayList(u8).init(allocator);
-    var stderr_ = ArrayList(u8).init(allocator);
-
-    defer stdout_.deinit();
-    defer stderr_.deinit();
-    try child.spawn();
-    try child.collectOutput(&stdout_, &stderr_, 8192);
-    const exit_code = child.wait();
-    try std.testing.expectEqual(exit_code, std.process.Child.Term{ .Exited = 0 });
-
-    return allocator.dupe(u8, stdout_.items);
 }
 
 pub fn escapeJsonString(input: []const u8, allocator: Allocator) ![]u8 {

@@ -1,6 +1,7 @@
 const tldr_base = @import("tldr-base.zig");
 const std = @import("std");
 const lmdb = @import("lmdb-zig");
+const getSysTmpDir = @import("extern.zig").getSysTmpDir;
 
 const Child = std.process.Child;
 const ArrayList = std.ArrayList;
@@ -108,9 +109,12 @@ const pr: []const Replacement = process_replacements[0..];
 
 pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr, .fixPostTranslation = &conjugateToThird };
 
-const dbverbspath = "/home/igor/playground/python/updatecompjugadb/tldr.db";
+const dbverbspath = "/tmp/tldr.db";
 
 pub fn conjugateToThird(allocator: std.mem.Allocator, line: []const u8) CombinedError![]const u8 {
+    const tmp_dir = try getSysTmpDir(allocator);
+    defer allocator.free(tmp_dir);
+
     const index_separator = std.mem.indexOf(u8, line, " ") orelse {
         return allocator.dupe(u8, line);
     };
