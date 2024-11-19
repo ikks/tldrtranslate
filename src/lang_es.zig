@@ -1,16 +1,14 @@
+/// Definitions for es translations
 const tldr_base = @import("tldr-base.zig");
-const std = @import("std");
-const lmdb = @import("lmdb-zig");
-const getSysTmpDir = @import("extern.zig").getSysTmpDir;
-
-const Child = std.process.Child;
-const ArrayList = std.ArrayList;
-const logerr = std.log.err;
-
 const Replacement = tldr_base.Replacement;
 const LangReplacement = tldr_base.LangReplacement;
-const CombinedError = tldr_base.CombinedError;
+const identityFn = tldr_base.identityFn;
 
+/// These replacements are for sample execution
+/// Firts list the more particular ones that can be replaced many times
+/// Then show the replacements of complete arguments
+/// To extract the most repeated expressions on sample execution commands we used:
+/// cat pages/{openbsd,netbsd,sunos,common,linux,windows,android,freebsd,osx}/*.md | grep -oP '(?<=[{][{])[^}}]*'|sort | uniq -c |  sort -g -r | head -200 | less
 const process_replacements = [_]Replacement{
     Replacement{ .original = "path/to/file_or_directory", .replacement = "ruta/al/archivo_o_directorio" },
     Replacement{ .original = "path/to/target/directory", .replacement = "ruta/al/directorio/destino" },
@@ -108,19 +106,46 @@ const sr: []const Replacement = summary_replacements[0..];
 const pr: []const Replacement = process_replacements[0..];
 
 pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr, .fixPostTranslation = &conjugateToThird };
+// To add a new translation the above line would be replaced by
+// pub const l_xx: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr, .fixPostTranslation = &identityFn};
 
-const dbverbspath = "/tmp/tldr.db";
+// Past this point, definitions to postprocess a translation
+// In spanish we aim to make sure we follow the third person to describe command executions
+// the translator usually offers imperative or indefinitive conjugations, and we wish to avoid them
+// and transform the verb to singular third person.
+// https://github.com/tldr-pages/tldr/blob/main/contributing-guides/style-guide.md#spanish-specific-rules
 
-pub fn conjugateToThird(allocator: std.mem.Allocator, line: []const u8) CombinedError![]const u8 {
+const std = @import("std");
+const lmdb = @import("lmdb-zig");
+const getSysTmpDir = @import("extern.zig").getSysTmpDir;
+
+const Child = std.process.Child;
+const ArrayList = std.ArrayList;
+const logerr = std.log.err;
+
+const CombinedError = tldr_base.CombinedError;
+
+/// This database contains a mapping from imperative and indefinitive to present singular third person
+/// is an lmdb database
+const dbthirdpersonsingular = "tldr.db";
+
+/// Receives a sentence that can be converted to present singular third person if the first word is a verb
+/// and is in indefinitive or imperative second singular person.
+/// You are responsible for freeing the return value that is a transformation from the sentence.
+pub fn conjugateToThird(allocator: std.mem.Allocator, sentence: []const u8) CombinedError![]const u8 {
     const tmp_dir = try getSysTmpDir(allocator);
     defer allocator.free(tmp_dir);
+    const path_db = [_][]const u8{ tmp_dir, dbthirdpersonsingular };
+    const dbverbspath = try std.fs.path.join(allocator, &path_db);
+    defer allocator.free(dbverbspath);
 
-    const index_separator = std.mem.indexOf(u8, line, " ") orelse {
-        return allocator.dupe(u8, line);
+    const index_separator = std.mem.indexOf(u8, sentence, " ") orelse {
+        return allocator.dupe(u8, sentence);
     };
-    const verb = line[0..index_separator];
+    const verb = sentence[0..index_separator];
     defer allocator.free(verb);
-    var buffer: [80]u8 = undefined; // Buffer to hold ASCII bytes
+
+    var buffer: [80]u8 = undefined;
     @memcpy(buffer[0..verb.len], verb);
 
     const env = lmdb.Env.init(dbverbspath, .{}) catch |err| {
@@ -141,9 +166,9 @@ pub fn conjugateToThird(allocator: std.mem.Allocator, line: []const u8) Combined
     normalize[0] = std.ascii.toLower(normalize[0]);
     const conjugation = tx.get(db, normalize) catch verb;
     if (wasUpper) {
-        const result = try std.fmt.allocPrint(allocator, "{c}{s}{s}", .{ std.ascii.toUpper(conjugation[0]), conjugation[1..], line[index_separator..] });
+        const result = try std.fmt.allocPrint(allocator, "{c}{s}{s}", .{ std.ascii.toUpper(conjugation[0]), conjugation[1..], sentence[index_separator..] });
         return result;
     }
-    const result = try std.fmt.allocPrint(allocator, "{s}{s}", .{ conjugation, line[index_separator..] });
+    const result = try std.fmt.allocPrint(allocator, "{s}{s}", .{ conjugation, sentence[index_separator..] });
     return result;
 }
