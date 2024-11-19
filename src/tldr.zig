@@ -228,7 +228,7 @@ fn translateLineApi(allocator: Allocator, source_string: []const u8, language: [
     var buf: [1024]u8 = undefined;
     var req = client.open(.POST, uri, .{ .server_header_buffer = &buf }) catch |err| {
         if (err == std.posix.ConnectError.ConnectionRefused) {
-            logerr("Make sure you have an API Argos Translate Running in {s}", .{translation_api});
+            logerr("Make sure you have an API Argos Translate Running in {s}\n check {s} and make it run in port 8000", .{ translation_api, "https://github.com/Jaro-c/Argos-API" });
         }
         return err;
     };
@@ -246,7 +246,7 @@ fn translateLineApi(allocator: Allocator, source_string: []const u8, language: [
     defer allocator.free(body);
 
     if (req.response.status != .ok) {
-        logerr("The API is not prepared for what you asked for. Status:{d}\nPayload:{s}\nResponse:{s}", .{ req.response.status, payload, body });
+        logerr("Make sure you have language `{s}` installed, if your API has it installed, check the next.\n Status:{d}\nPayload:{s}\nResponse:{s}", .{ language, req.response.status, payload, body });
         return ArgosApiError.LangNotFound;
     }
 
