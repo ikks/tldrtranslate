@@ -18,7 +18,7 @@ const PostProcess = tldr_base.PostProcess;
 const conjugateToThird = lang_es.conjugateToThird;
 const original_language = tldr_base.original_language;
 
-pub const translation_api = "http://localhost:8000/translate";
+const translation_api = &tldr_base.global_config.translation_api;
 
 pub const ArgosApiError = error{LangNotFound};
 
@@ -176,28 +176,27 @@ fn processExecution(source_string: []const u8, replacements: []const Replacement
 const processDescription = translateLine;
 
 fn translateLine(allocator: Allocator, source_string: []const u8, language: []const u8, postFn: PostProcess, writer: std.fs.File.Writer) !void {
-    var slice: []u8 = undefined;
-    slice = try translateLineApi(allocator, source_string[2..], language);
-    defer allocator.free(slice);
+    var sentence: []u8 = undefined;
+    sentence = try translateLineApi(allocator, source_string[2..], language);
+    defer allocator.free(sentence);
 
-    const fix_conjugation = postFn(allocator, slice) catch |err| {
+    const post_processed_line = postFn(allocator, sentence) catch |err| {
         return err;
     };
-    defer allocator.free(fix_conjugation);
+    defer allocator.free(post_processed_line);
 
-    const last_char_idx = fix_conjugation.len - 1;
-    if (fix_conjugation[last_char_idx] == '\n') {
-        try writer.print("{s}{s}", .{ source_string[0..2], fix_conjugation });
+    const last_char_idx = post_processed_line.len - 1;
+    if (post_processed_line[last_char_idx] == '\n') {
+        try writer.print("{s}{s}", .{ source_string[0..2], post_processed_line });
     } else {
-        try writer.print("{s}{s}\n", .{ source_string[0..2], fix_conjugation });
+        try writer.print("{s}{s}\n", .{ source_string[0..2], post_processed_line });
     }
 }
 
 fn translateLineApi(allocator: Allocator, source_string: []const u8, language: []const u8) ![]u8 {
     var client = http.Client{ .allocator = allocator };
     defer client.deinit();
-
-    const uri = try std.Uri.parse(translation_api);
+    const uri = try std.Uri.parse(translation_api.*);
     const escaped_for_json = try escapeJsonString(source_string, allocator);
     defer allocator.free(escaped_for_json);
     const payload = try std.fmt.allocPrint(allocator, "{{\"text\": \"{s}\", \"from_lang\": \"{s}\", \"to_lang\": \"{s}\"}}", .{ escaped_for_json, original_language, language[0..2] });
@@ -206,7 +205,7 @@ fn translateLineApi(allocator: Allocator, source_string: []const u8, language: [
     var buf: [1024]u8 = undefined;
     var req = client.open(.POST, uri, .{ .server_header_buffer = &buf }) catch |err| {
         if (err == std.posix.ConnectError.ConnectionRefused) {
-            logerr("Make sure you have an API Argos Translate Running in {s}\n check {s} and make it run in port 8000", .{ translation_api, "https://github.com/Jaro-c/Argos-API" });
+            logerr("Make sure you have an API Argos Translate Running in {s}.\n Follow instructions from {s} to install and make it run in another window. It takes a few seconds to be available.", .{ translation_api.*, "https://github.com/Jaro-c/Argos-API" });
         }
         return err;
     };

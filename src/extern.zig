@@ -13,7 +13,6 @@ pub fn getSysTmpDir(a: std.mem.Allocator) ![]const u8 {
                     return std.process.getEnvVarOwned(allocator, "TMP") catch {
                         return std.process.getEnvVarOwned(allocator, "TEMP") catch {
                             return std.process.getEnvVarOwned(allocator, "TEMPDIR") catch {
-                                std.debug.print("tried env TMPDIR/TMP/TEMP/TEMPDIR but not found, fallback to /tmp, caution it may not work!", .{});
                                 return try allocator.dupe(u8, "/tmp");
                             };
                         };

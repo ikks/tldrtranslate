@@ -1,8 +1,13 @@
 const Allocator = @import("std").mem.Allocator;
 const Mdb_Err = @import("lmdb-zig").Mdb_Err;
-
+pub var global_config = GlobalConfiguration{};
 pub const original_language = "en";
 pub const CombinedError = Mdb_Err || error{ OutOfMemory, AllocationFailed };
+
+pub const GlobalConfiguration = struct {
+    translation_api: []const u8 = &.{},
+    database_spanish_conjugation_fix: []const u8 = &.{},
+};
 
 pub const ReplaceAndSize = struct {
     replacements: usize,

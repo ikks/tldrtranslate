@@ -3,6 +3,7 @@ const tldr_base = @import("tldr-base.zig");
 const Replacement = tldr_base.Replacement;
 const LangReplacement = tldr_base.LangReplacement;
 const identityFn = tldr_base.identityFn;
+const db_verbs_path = &tldr_base.global_config.database_spanish_conjugation_fix;
 
 /// These replacements are for sample execution
 /// Firts list the more particular ones that can be replaced many times
@@ -117,7 +118,6 @@ pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replace
 
 const std = @import("std");
 const lmdb = @import("lmdb-zig");
-const getSysTmpDir = @import("extern.zig").getSysTmpDir;
 
 const Child = std.process.Child;
 const ArrayList = std.ArrayList;
@@ -133,12 +133,6 @@ const dbthirdpersonsingular = "tldr.db";
 /// and is in indefinitive or imperative second singular person.
 /// You are responsible for freeing the return value that is a transformation from the sentence.
 pub fn conjugateToThird(allocator: std.mem.Allocator, sentence: []const u8) CombinedError![]const u8 {
-    const tmp_dir = try getSysTmpDir(allocator);
-    defer allocator.free(tmp_dir);
-    const path_db = [_][]const u8{ tmp_dir, dbthirdpersonsingular };
-    const dbverbspath = try std.fs.path.join(allocator, &path_db);
-    defer allocator.free(dbverbspath);
-
     const index_separator = std.mem.indexOf(u8, sentence, " ") orelse {
         return allocator.dupe(u8, sentence);
     };
@@ -148,9 +142,10 @@ pub fn conjugateToThird(allocator: std.mem.Allocator, sentence: []const u8) Comb
     var buffer: [80]u8 = undefined;
     @memcpy(buffer[0..verb.len], verb);
 
-    const env = lmdb.Env.init(dbverbspath, .{}) catch |err| {
+    const env = lmdb.Env.init(db_verbs_path.*, .{}) catch |err| {
         if (err == lmdb.Mdb_Err.no_such_file_or_dir) {
-            logerr("Make sure you have access to the verb conjugation db {s}", .{dbverbspath});
+            const full_path = try std.fs.path.join(allocator, &[_][]const u8{ db_verbs_path.*, "tldr_translation.db" });
+            logerr("Make sure you have access to the verb conjugation db `{s}` was not found", .{full_path});
         }
         return err;
     };

@@ -40,4 +40,8 @@ If you need to postprocess a translation, you can follow what was done for spani
 ## Acknowledgments
 
 * [Argos-translate](https://github.com/argosopentech/argos-translate) with tons of work.
+* Compjugador
 
+# Resources
+
+* [Verbs conversion](https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz)
