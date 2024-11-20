@@ -32,36 +32,26 @@ const getSysTmpDir = @import("extern.zig").getSysTmpDir;
 /// * else defaults to es
 /// It's able to manage pt and zh correctly
 fn setupLanguage(allocator: Allocator) ![]u8 {
-    var language: []u8 = try allocator.alloc(u8, 8);
-    const tldr_lang = std.process.getEnvVarOwned(allocator, "TLDR_LANG") catch |err| {
+    if (std.process.getEnvVarOwned(allocator, "TLDR_LANG")) |value| {
+        defer allocator.free(value);
+        return allocator.dupe(u8, value);
+    } else |err| {
         if (err == std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
-            const other_value = try std.process.getEnvVarOwned(allocator, "LANG");
-            defer allocator.free(other_value);
-            if (!std.mem.eql(u8, other_value[0..2], "en")) {
-                if (std.mem.eql(u8, other_value[0..2], "pt") or std.mem.eql(u8, other_value[0..2], "zh")) {
-                    std.mem.copyForwards(u8, language, other_value[0..5]);
+            const env_lang = try std.process.getEnvVarOwned(allocator, "LANG");
+            defer allocator.free(env_lang);
+            if (!std.mem.eql(u8, env_lang[0..2], "en")) {
+                if (std.mem.eql(u8, env_lang[0..2], "pt") or std.mem.eql(u8, env_lang[0..5], "zh_TW")) {
+                    return allocator.dupe(u8, env_lang[0..5]);
                 } else {
-                    defer allocator.free(language);
-                    return allocator.dupe(u8, other_value[0..2]);
+                    return allocator.dupe(u8, env_lang[0..2]);
                 }
-                return language;
             } else {
-                std.mem.copyForwards(u8, language, "es");
-                return language;
+                return allocator.dupe(u8, "es");
             }
         } else {
             return err;
         }
-    };
-    var max_size: usize = 5;
-    if (tldr_lang.len < 5) {
-        max_size = tldr_lang.len;
     }
-    std.mem.copyForwards(u8, language[0..max_size], tldr_lang[0..max_size]);
-    language[max_size] = 0;
-    defer allocator.free(tldr_lang);
-    defer allocator.free(language);
-    return allocator.dupe(u8, tldr_lang[0..max_size]);
 }
 
 fn setupTranslationApi(allocator: Allocator) !void {
