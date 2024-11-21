@@ -125,10 +125,6 @@ const logerr = std.log.err;
 
 const CombinedError = tldr_base.CombinedError;
 
-/// This database contains a mapping from imperative and indefinitive to present singular third person
-/// is an lmdb database
-const dbthirdpersonsingular = "tldr.db";
-
 /// Receives a sentence that can be converted to present singular third person if the first word is a verb
 /// and is in indefinitive or imperative second singular person.
 /// You are responsible for freeing the return value that is a transformation from the sentence.

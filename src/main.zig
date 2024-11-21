@@ -91,7 +91,7 @@ fn setupSpanishConjugationDbPath(allocator: Allocator) !void {
     global_config.database_spanish_conjugation_fix = dbpath;
 }
 
-pub fn show_supported_langs(writer: Writer) !void {
+pub fn showSupportedLangs(writer: Writer) !void {
     try writer.print("We do support atm:\n", .{});
     for (supported_langs) |lang| {
         try writer.print("  * {s}\n", .{lang});
@@ -99,7 +99,7 @@ pub fn show_supported_langs(writer: Writer) !void {
     try writer.print("  * {s}\n", .{"es"});
 }
 
-pub fn show_env_vars_and_defaults(allocator: Allocator, writer: Writer) !void {
+pub fn showEnvVarsAndDefaults(allocator: Allocator, writer: Writer) !void {
     try writer.print("\nYou can set the following ENV_VARS to change the default configurations:\n{s}\n{s}\n{s}\n{s}{s}\n\n", .{
         "  TLDR_LANG: defaults to spanish",
         "  TLDR_ARGOS_API_URLBASE: defaults to localhost",
@@ -109,7 +109,7 @@ pub fn show_env_vars_and_defaults(allocator: Allocator, writer: Writer) !void {
     });
 }
 
-pub fn show_usage(progname: []const u8, writer: Writer) !void {
+pub fn usage(progname: []const u8, writer: Writer) !void {
     try writer.print("\n{s} is here to help you translate tldr pages. Visit https://tldr.sh/ to learn more about the project\n{s}\n{s}\n{s}\n", .{
         progname,
         "\nReceives as parameter the tldr page to be translated, i.e. pages/common/tar.md",
@@ -128,8 +128,8 @@ pub fn main() !u8 {
     defer std.process.argsFree(allocator, args);
     if (args.len != 2) {
         logerr("Make sure the path includes the tldr root, target and pagename: i.e.\n\n   {s} pages/common/tar.md", .{args[0]});
-        try show_usage(args[0], std.io.getStdOut().writer());
-        try show_env_vars_and_defaults(allocator, std.io.getStdOut().writer());
+        try usage(args[0], std.io.getStdOut().writer());
+        try showEnvVarsAndDefaults(allocator, std.io.getStdOut().writer());
         return 1;
     }
 
@@ -151,7 +151,7 @@ pub fn main() !u8 {
 
     if (!replacements.contains(language)) {
         logerr("We do not support language `{s}` yet.", .{language});
-        try show_supported_langs(std.io.getStdErr().writer());
+        try showSupportedLangs(std.io.getStdErr().writer());
         return 1;
     }
 

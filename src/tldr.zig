@@ -1,6 +1,7 @@
 const std = @import("std");
 const tldr_base = @import("tldr-base.zig");
 const lang_es = @import("lang_es.zig");
+const escapeJsonString = @import("extern.zig").escapeJsonString;
 
 const testing = std.testing;
 const ArrayList = std.ArrayList;
@@ -17,76 +18,11 @@ const identityFn = tldr_base.identityFn;
 const PostProcess = tldr_base.PostProcess;
 const conjugateToThird = lang_es.conjugateToThird;
 const original_language = tldr_base.original_language;
+const replaceMany = tldr_base.replaceMany;
 
 const translation_api = &tldr_base.global_config.translation_api;
 
 pub const ArgosApiError = error{LangNotFound};
-
-pub fn replaceMany(original: []const u8, replacements: []const Replacement, output: []u8) ReplaceAndSize {
-    var found: usize = 0;
-    var total: usize = 0;
-    var len = original.len;
-    var buffer2: [2000]u8 = undefined;
-
-    if (replacements.len == 0) {
-        std.mem.copyForwards(u8, output, original);
-        return ReplaceAndSize{ .replacements = 0, .size = original.len };
-    }
-    @memcpy(buffer2[0..original.len], original);
-    for (replacements) |replacepair| {
-        found = std.mem.replace(u8, buffer2[0..len], replacepair.original, replacepair.replacement, output);
-        if (found == 0) {
-            continue;
-        }
-        total += found;
-        if (replacepair.replacement.len > replacepair.original.len) {
-            len = len + found * (replacepair.replacement.len - replacepair.original.len);
-        } else {
-            len = len - found * (replacepair.original.len - replacepair.replacement.len);
-        }
-        @memcpy(buffer2[0..len], output[0..len]);
-    }
-    return ReplaceAndSize{ .replacements = total, .size = len };
-}
-
-pub fn escapeJsonString(input: []const u8, allocator: Allocator) ![]u8 {
-    var result = try allocator.alloc(u8, input.len * 2);
-    var index: usize = 0;
-    for (input) |c| {
-        switch (c) {
-            '\"' => {
-                result[index] = '\\';
-                result[index + 1] = c;
-                index += 2;
-            },
-            '\\' => {
-                result[index] = '\\';
-                result[index + 1] = c;
-                index += 2;
-            },
-            '\n' => {
-                result[index] = '\\';
-                result[index + 1] = 'n';
-                index += 2;
-            },
-            '\r' => {
-                result[index] = '\\';
-                result[index + 1] = 'r';
-                index += 2;
-            },
-            '\t' => {
-                result[index] = '\\';
-                result[index + 1] = 't';
-                index += 2;
-            },
-            else => {
-                result[index] = c;
-                index += 1;
-            },
-        }
-    }
-    return result[0..index]; // Return the escaped string
-}
 
 /// Translates a TLDR file to the specified language using the replacements for the language
 /// Writes the result to the language specified directory.
