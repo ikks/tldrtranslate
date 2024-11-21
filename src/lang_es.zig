@@ -140,8 +140,7 @@ pub fn conjugateToThird(allocator: std.mem.Allocator, sentence: []const u8) Comb
 
     const env = lmdb.Env.init(db_verbs_path.*, .{}) catch |err| {
         if (err == lmdb.Mdb_Err.no_such_file_or_dir) {
-            const full_path = try std.fs.path.join(allocator, &[_][]const u8{ db_verbs_path.*, "tldr_translation.db" });
-            logerr("Make sure you have access to the verb conjugation db `{s}` was not found", .{full_path});
+            logerr("Make sure you have access to the verb conjugation db `{s}` was not found", .{db_verbs_path.*});
         }
         return err;
     };

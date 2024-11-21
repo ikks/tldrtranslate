@@ -32,6 +32,8 @@ pub fn build(b: *std.Build) void {
     // running `zig build`).
     b.installArtifact(lib);
 
+    const clap = b.dependency("clap", .{});
+
     const exe = b.addExecutable(.{
         .name = "tldrtranslate",
         .root_source_file = b.path("src/main.zig"),
@@ -39,6 +41,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     exe.root_module.addImport("lmdb-zig", lmdb_zig.module("lmdb-zig-mod"));
+    exe.root_module.addImport("clap", clap.module("clap"));
     exe.linkLibrary(lmdb_zig.artifact("lmdb-zig"));
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

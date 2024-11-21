@@ -27,6 +27,10 @@
             .url = "https://github.com/john-g4lt/lmdb-zig/archive/refs/tags/v0.1.0.tar.gz",
             .hash = "1220a44f2880d150589664ee936da3b856674d732cbf02b4714a7282fa752facad97",
         },
+        .clap = .{
+            .url = "https://github.com/Hejsil/zig-clap/archive/refs/tags/0.9.1.tar.gz",
+            .hash = "122062d301a203d003547b414237229b09a7980095061697349f8bef41be9c30266b",
+        },
     },
     .paths = .{
         "build.zig",

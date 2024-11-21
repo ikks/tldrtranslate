@@ -12,6 +12,9 @@ needs to be supervised and edited by a human.
 * [argos-API](https://github.com/Jaro-c/Argos-API) translate instance running, in port 8000
 * For spanish data to tweak the verb inflection
 
+```
+mkdir -p /tmp/tldr_translation.db && cd $_ && wget https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz && gunzip data.mdb.gz
+```
 Feel free to clone and modify to suit your needs.
 
 ## Running

@@ -2,6 +2,8 @@ const std = @import("std");
 const tldr_base = @import("tldr-base.zig");
 const tldr = @import("tldr.zig");
 const lang_es = @import("lang_es.zig");
+const clap = @import("clap");
+
 const l_es = lang_es.l_es;
 const processFile = tldr.processFile;
 
@@ -25,6 +27,7 @@ const getSysTmpDir = @import("extern.zig").getSysTmpDir;
 // TBD TLDR_ARGOS_API_PORT
 // TBD TLDR_ARGOS_API_URLBASE
 // TBD Add sample file and explanation on how to add another language
+// Expand help and double test when using ENV VARS
 
 /// The language is found following these rules:
 /// * tries to use the LANG envvar in case it's not english
@@ -54,27 +57,37 @@ fn setupLanguage(allocator: Allocator) ![]u8 {
     }
 }
 
-fn setupTranslationApi(allocator: Allocator) !void {
+fn setupTranslationApi(allocator: Allocator, host: []const u8, port: usize) !void {
     var tldr_api_port: []const u8 = undefined;
-    if (std.process.getEnvVarOwned(allocator, "TLDR_ARGOS_API_PORT")) |value| {
-        tldr_api_port = value;
-    } else |err| {
-        if (err != std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
-            return err;
+    if (port == 0) {
+        if (std.process.getEnvVarOwned(allocator, "TLDR_ARGOS_API_PORT")) |value| {
+            tldr_api_port = value;
+        } else |err| {
+            if (err != std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
+                return err;
+            }
+            tldr_api_port = "8000";
         }
-        tldr_api_port = "8000";
+    } else {
+        tldr_api_port = try std.fmt.allocPrint(allocator, "{}", .{port});
     }
     var tldr_api_urlbase: []const u8 = undefined;
-    if (std.process.getEnvVarOwned(allocator, "TLDR_ARGOS_API_URLBASE")) |value| {
-        tldr_api_urlbase = value;
-    } else |err| {
-        if (err != std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
-            return err;
+    if (host.len == 0) {
+        if (std.process.getEnvVarOwned(allocator, "TLDR_ARGOS_API_URLBASE")) |value| {
+            tldr_api_urlbase = value;
+        } else |err| {
+            if (err != std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
+                return err;
+            }
+            tldr_api_urlbase = "localhost";
         }
-        tldr_api_urlbase = "localhost";
+    } else {
+        tldr_api_urlbase = host[0..];
     }
     const api = try std.fmt.allocPrint(allocator, "http://{s}:{s}/translate", .{ tldr_api_urlbase, tldr_api_port });
     global_config.translation_api = api;
+    if (port != 0)
+        allocator.free(tldr_api_port);
 }
 
 fn setupSpanishConjugationDbPath(allocator: Allocator) !void {
@@ -126,19 +139,66 @@ pub fn main() !u8 {
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
-    if (args.len != 2) {
+
+    const params = comptime clap.parseParamsComptime(
+        \\-h, --help             Display this help and exit.
+        \\-l, --lang <str>       Target translation language
+        \\-d, --spanishdb <str>   Path where the db verbs reside
+        \\-p, --port <usize>   Path where the db verbs reside
+        \\-u, --url <str>   Path where the db verbs reside
+        \\<str>
+    );
+    var diag = clap.Diagnostic{};
+    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+        .diagnostic = &diag,
+        .allocator = allocator,
+    }) catch |err| {
+        // Report useful error and exit
+        diag.report(std.io.getStdErr().writer(), err) catch {};
+        return err;
+    };
+    defer res.deinit();
+
+    if (res.args.help != 0) {
+        try usage(args[0], std.io.getStdOut().writer());
+        try showEnvVarsAndDefaults(allocator, std.io.getStdOut().writer());
+        return 0;
+    }
+
+    if (res.positionals.len != 1) {
         logerr("Make sure the path includes the tldr root, target and pagename: i.e.\n\n   {s} pages/common/tar.md", .{args[0]});
         try usage(args[0], std.io.getStdOut().writer());
         try showEnvVarsAndDefaults(allocator, std.io.getStdOut().writer());
         return 1;
     }
 
-    try setupTranslationApi(allocator);
-    defer allocator.free(global_config.translation_api);
-    try setupSpanishConjugationDbPath(allocator);
-    defer allocator.free(global_config.database_spanish_conjugation_fix);
-    language = try setupLanguage(allocator);
-    defer allocator.free(language);
+    if (res.args.lang) |s| {
+        logerr("line lang: {s}", .{s});
+        language = try allocator.dupe(u8, s);
+        errdefer allocator.free(language);
+    } else {
+        logerr("Grrr", .{});
+        language = try setupLanguage(allocator);
+        errdefer allocator.free(language);
+    }
+    if (res.args.spanishdb) |s| {
+        global_config.database_spanish_conjugation_fix = s;
+    } else {
+        try setupSpanishConjugationDbPath(allocator);
+        errdefer allocator.free(global_config.database_spanish_conjugation_fix);
+    }
+    var port: usize = 0;
+    if (res.args.port) |n| {
+        port = n;
+    }
+
+    var host: []const u8 = "";
+
+    if (res.args.url) |s| {
+        host = s[0..];
+    }
+    try setupTranslationApi(allocator, host, port);
+    errdefer allocator.free(global_config.translation_api);
 
     var replacements = std.StringHashMap(LangReplacement).init(
         allocator,
