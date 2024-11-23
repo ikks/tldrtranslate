@@ -31,7 +31,7 @@ pub fn getSysTmpDir(a: std.mem.Allocator) ![]const u8 {
 
             pub fn get(allocator: std.mem.Allocator) ![]const u8 {
                 // use GetTempPathW2, https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-gettemppathw
-                var wchar_buf: [MAX_PATH + 2]WCHAR = undefined;
+                var wchar_buf: [MAX_PATH + 2:0]WCHAR = undefined;
                 wchar_buf[MAX_PATH + 1] = 0;
                 const ret = GetTempPath2W(MAX_PATH + 1, &wchar_buf);
                 if (ret != 0) {
