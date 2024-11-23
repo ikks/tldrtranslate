@@ -7,7 +7,7 @@ const testing = std.testing;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const Child = std.process.Child;
-const logerr = std.log.err;
+const logErr = tldr_base.logErr;
 const fs = std.fs;
 const http = std.http;
 
@@ -36,13 +36,13 @@ pub fn processFile(
     defer file.close();
 
     const ipages = std.mem.indexOf(u8, filename, "pages") orelse {
-        logerr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md", .{});
+        logErr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md", .{});
         return;
     };
     const filename_language = try std.fmt.allocPrint(allocator, "{s}.{s}{s}", .{ filename[0 .. ipages + 5], language, filename[ipages + 5 ..] });
     defer allocator.free(filename_language);
     const file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
-        logerr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
+        logErr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
         return;
     };
     defer file_out.close();
@@ -141,7 +141,7 @@ fn translateLineApi(allocator: Allocator, source_string: []const u8, language: [
     var buf: [1024]u8 = undefined;
     var req = client.open(.POST, uri, .{ .server_header_buffer = &buf }) catch |err| {
         if (err == std.posix.ConnectError.ConnectionRefused) {
-            logerr("Make sure you have an API Argos Translate Running in {s}.\n Follow instructions from {s} to install and make it run in another window. It takes a few seconds to be available.", .{ translation_api.*, "https://github.com/Jaro-c/Argos-API" });
+            logErr("Make sure you have an API Argos Translate Running in {s}.\n Follow instructions from {s} to install and make it run in another window. It takes a few seconds to be available.", .{ translation_api.*, "https://github.com/Jaro-c/Argos-API" });
         }
         return err;
     };
@@ -159,7 +159,7 @@ fn translateLineApi(allocator: Allocator, source_string: []const u8, language: [
     defer allocator.free(body);
 
     if (req.response.status != .ok) {
-        logerr("Make sure you have language `{s}` installed, if your API has it installed, check the next.\n Status:{d}\nPayload:{s}\nResponse:{s}", .{ language, req.response.status, payload, body });
+        logErr("Make sure you have language `{s}` installed, if your API has it installed, check the next.\n Status:{d}\nPayload:{s}\nResponse:{s}", .{ language, req.response.status, payload, body });
         return ArgosApiError.LangNotFound;
     }
 

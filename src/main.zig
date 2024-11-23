@@ -14,22 +14,26 @@ const supported_langs = tldr_base.supported_default_languages;
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
 const print = std.debug.print;
-const logerr = std.log.err;
+const logErr = tldr_base.logErr;
 const Writer = std.fs.File.Writer;
 
 const global_config = &tldr_base.global_config;
 const getSysTmpDir = @import("extern.zig").getSysTmpDir;
 
-// Improve memory management, reuse the allocator in the invocation of processFile
-// Add cli options to show supported languges, set APIPORT APIURL DBPATH
-// Show help on how to use this with languages
-// TBD TLDR_ES_DB_PATH
-// TBD TLDR_ARGOS_API_PORT
-// TBD TLDR_ARGOS_API_URLBASE
-// TBD Add sample file and explanation on how to add another language
-// Expand help and double test when using ENV VARS
+const help_args =
+    \\  -h, --help                   Display this help and exit
+    \\  -L, --languages              Show the list of supported languages
+    \\  -l, --lang <str>             Target translation language
+    \\  -d, --spanishdb <str>        Path where the db verbs reside
+    \\  -p, --port <usize>           Port of Argos Translate API, defaults to 8000
+    \\  -u, --url <str>              URL of the Argos Translate API, defaults to localhost
+    \\  <str> pages/common/sample.md Path to a file to be translated
+;
 
-/// The language is found following these rules:
+// Improve memory management, reuse the allocator in the invocation of processFile
+// TBD Add sample file and explanation on how to add another language
+
+/// The language is selected following these rules:
 /// * tries to use the LANG envvar in case it's not english
 /// * if the TLDR_LANG is set, takes that value
 /// * else defaults to es
@@ -105,7 +109,7 @@ fn setupSpanishConjugationDbPath(allocator: Allocator) !void {
 }
 
 pub fn showSupportedLangs(writer: Writer) !void {
-    try writer.print("We do support atm:\n", .{});
+    try writer.print("\nSupported languages:\n", .{});
     for (supported_langs) |lang| {
         try writer.print("  * {s}\n", .{lang});
     }
@@ -114,7 +118,7 @@ pub fn showSupportedLangs(writer: Writer) !void {
 
 pub fn showEnvVarsAndDefaults(allocator: Allocator, writer: Writer) !void {
     try writer.print("\nYou can set the following ENV_VARS to change the default configurations:\n{s}\n{s}\n{s}\n{s}{s}\n\n", .{
-        "  TLDR_LANG: defaults to spanish",
+        "  TLDR_LANG: defaults to es (spanish)",
         "  TLDR_ARGOS_API_URLBASE: defaults to localhost",
         "  TLDR_ARGOS_API_PORT: Defaults to 8000",
         "  TLDR_ES_DB_PATH: Defaults to ",
@@ -123,11 +127,10 @@ pub fn showEnvVarsAndDefaults(allocator: Allocator, writer: Writer) !void {
 }
 
 pub fn usage(progname: []const u8, writer: Writer) !void {
-    try writer.print("\n{s} is here to help you translate tldr pages. Visit https://tldr.sh/ to learn more about the project\n{s}\n{s}\n{s}\n", .{
+    try writer.print("\n{s} helps you translate tldr pages.\nVisit https://tldr.sh/ to learn more about the project\n\n{s}\n\n{s}\n\n", .{
         progname,
-        "\nReceives as parameter the tldr page to be translated, i.e. pages/common/tar.md",
-        "\nIt will put the translation to the language you are translating to.  Set your `TLDR_LANG` to your needes, \nit will try your LOCALE first, if it's not english you would be ok, if there is no possible \nconfiguration, it will translate to es (Spanish).\n",
-        "The translated file will go to pages.es/common/tar.md as the example, change accordingly.",
+        help_args,
+        "The translated file will go to the proper place, pages.es/common/sample.md.",
     });
 }
 
@@ -140,14 +143,7 @@ pub fn main() !u8 {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    const params = comptime clap.parseParamsComptime(
-        \\-h, --help             Display this help and exit.
-        \\-l, --lang <str>       Target translation language
-        \\-d, --spanishdb <str>   Path where the db verbs reside
-        \\-p, --port <usize>   Path where the db verbs reside
-        \\-u, --url <str>   Path where the db verbs reside
-        \\<str>
-    );
+    const params = comptime clap.parseParamsComptime(help_args);
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
@@ -164,20 +160,23 @@ pub fn main() !u8 {
         try showEnvVarsAndDefaults(allocator, std.io.getStdOut().writer());
         return 0;
     }
+    if (res.args.languages != 0) {
+        try std.io.getStdOut().writer().print("\n{s}: Starts a tldr translation for you to review\n", .{args[0]});
+        try showSupportedLangs(std.io.getStdOut().writer());
+        return 0;
+    }
 
     if (res.positionals.len != 1) {
-        logerr("Make sure the path includes the tldr root, target and pagename: i.e.\n\n   {s} pages/common/tar.md", .{args[0]});
+        logErr("Make sure the path includes the tldr root, target and pagename: i.e.\n\n   {s} pages/common/tar.md", .{args[0]});
         try usage(args[0], std.io.getStdOut().writer());
         try showEnvVarsAndDefaults(allocator, std.io.getStdOut().writer());
         return 1;
     }
 
     if (res.args.lang) |s| {
-        logerr("line lang: {s}", .{s});
         language = try allocator.dupe(u8, s);
         errdefer allocator.free(language);
     } else {
-        logerr("Grrr", .{});
         language = try setupLanguage(allocator);
         errdefer allocator.free(language);
     }
@@ -210,15 +209,15 @@ pub fn main() !u8 {
     }
 
     if (!replacements.contains(language)) {
-        logerr("We do not support language `{s}` yet.", .{language});
+        logErr("We do not support language `{s}` yet.", .{language});
         try showSupportedLangs(std.io.getStdErr().writer());
         return 1;
     }
 
     const lang_replacement = replacements.get(language).?;
-    processFile(allocator, args[1], lang_replacement, language) catch |err| {
+    processFile(allocator, res.positionals[0], lang_replacement, language) catch |err| {
         if (err == std.posix.OpenError.FileNotFound) {
-            logerr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md\nCulprit was {s}", .{args[1]});
+            logErr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md\nCulprit was {s}", .{args[1]});
         }
         return err;
     };

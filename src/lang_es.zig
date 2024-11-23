@@ -1,4 +1,5 @@
 /// Definitions for es translations
+const builtin = @import("builtin");
 const tldr_base = @import("tldr-base.zig");
 const Replacement = tldr_base.Replacement;
 const LangReplacement = tldr_base.LangReplacement;
@@ -121,7 +122,7 @@ const lmdb = @import("lmdb-zig");
 
 const Child = std.process.Child;
 const ArrayList = std.ArrayList;
-const logerr = std.log.err;
+const logErr = tldr_base.logErr;
 
 const CombinedError = tldr_base.CombinedError;
 
@@ -140,7 +141,23 @@ pub fn conjugateToThird(allocator: std.mem.Allocator, sentence: []const u8) Comb
 
     const env = lmdb.Env.init(db_verbs_path.*, .{}) catch |err| {
         if (err == lmdb.Mdb_Err.no_such_file_or_dir) {
-            logerr("Make sure you have access to the verb conjugation db `{s}` was not found\n If on linux, try:\nHERE=$(pwd) && mkdir -p /tmp/tldr_translation.db && cd $_ && wget https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz && gunzip data.mdb.gz && cd $HERE", .{db_verbs_path.*});
+            var helper: []u8 = undefined;
+            if (builtin.os.tag == .windows) {
+                helper = try std.fmt.allocPrint(allocator, "Hint: Download {s}, decompress it and place it in {s}", .{
+                    "https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz",
+                    db_verbs_path.*,
+                });
+            } else {
+                helper = try std.fmt.allocPrint(allocator, "\n{s}\n\n{s}\n\n{s}{s}\n{s}{s}", .{
+                    "Hint: Run the following commands and try again:",
+                    "HERE=$(pwd) && mkdir -p /tmp/tldr_translation.db && cd $_ && curl --remote-name https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz && gunzip data.mdb.gz && cd $HERE",
+                    "If it fails, please download and decompress ",
+                    "https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz",
+                    "and place it in ",
+                    db_verbs_path.*,
+                });
+            }
+            logErr("Make sure you have access to the verb conjugation db.\n `{s}` was not found\n{s}\n", .{ db_verbs_path.*, helper });
         }
         return err;
     };

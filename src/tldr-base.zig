@@ -1,7 +1,9 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 const Mdb_Err = @import("lmdb-zig").Mdb_Err;
+
 pub var global_config = GlobalConfiguration{};
+pub const logErr = std.log.err;
 pub const original_language = "en";
 pub const CombinedError = Mdb_Err || error{ OutOfMemory, AllocationFailed };
 
