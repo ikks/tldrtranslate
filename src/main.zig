@@ -18,13 +18,11 @@ const logErr = tldr_base.logErr;
 const Writer = std.fs.File.Writer;
 
 const global_config = &tldr_base.global_config;
-const getSysTmpDir = @import("extern.zig").getSysTmpDir;
 
 const help_args =
     \\  -h, --help                   Display this help and exit
     \\  -L, --languages              Show the list of supported languages
     \\  -l, --lang <str>             Target translation language
-    \\  -d, --spanishdb <str>        Path where the db verbs reside
     \\  -p, --port <usize>           Port of Argos Translate API, defaults to 8000
     \\  -u, --url <str>              URL of the Argos Translate API, defaults to localhost
     \\  <str> pages/common/sample.md Path to a file to be translated
@@ -94,20 +92,6 @@ fn setupTranslationApi(allocator: Allocator, host: []const u8, port: usize) !voi
         allocator.free(tldr_api_port);
 }
 
-fn setupSpanishConjugationDbPath(allocator: Allocator) !void {
-    var local_spanish_database: []const u8 = undefined;
-    if (std.process.getEnvVarOwned(allocator, "TLDR_ES_DB_PATH")) |value| {
-        local_spanish_database = value;
-    } else |err| {
-        if (err != std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
-            return err;
-        }
-        local_spanish_database = try getSysTmpDir(allocator);
-    }
-    const dbpath = try std.fs.path.join(allocator, &[_][]const u8{ local_spanish_database, "tldr_translation.db" });
-    global_config.database_spanish_conjugation_fix = dbpath;
-}
-
 pub fn showSupportedLangs(writer: Writer) !void {
     try writer.print("\nSupported languages:\n", .{});
     for (supported_langs) |lang| {
@@ -116,13 +100,11 @@ pub fn showSupportedLangs(writer: Writer) !void {
     try writer.print("  * {s}\n", .{"es"});
 }
 
-pub fn showEnvVarsAndDefaults(allocator: Allocator, writer: Writer) !void {
-    try writer.print("\nYou can set the following ENV_VARS to change the default configurations:\n{s}\n{s}\n{s}\n{s}{s}\n\n", .{
+pub fn showEnvVarsAndDefaults(writer: Writer) !void {
+    try writer.print("\nYou can set the following ENV_VARS to change the default configurations:\n{s}\n{s}\n{s}\n\n", .{
         "  TLDR_LANG: defaults to es (spanish)",
         "  TLDR_ARGOS_API_URLBASE: defaults to localhost",
         "  TLDR_ARGOS_API_PORT: Defaults to 8000",
-        "  TLDR_ES_DB_PATH: Defaults to ",
-        try std.fs.path.join(allocator, &[_][]const u8{ try getSysTmpDir(allocator), "tldr_translation.db" }),
     });
 }
 
@@ -157,7 +139,7 @@ pub fn main() !u8 {
 
     if (res.args.help != 0) {
         try usage(args[0], std.io.getStdOut().writer());
-        try showEnvVarsAndDefaults(allocator, std.io.getStdOut().writer());
+        try showEnvVarsAndDefaults(std.io.getStdOut().writer());
         return 0;
     }
     if (res.args.languages != 0) {
@@ -169,7 +151,7 @@ pub fn main() !u8 {
     if (res.positionals.len != 1) {
         logErr("Make sure the path includes the tldr root, target and pagename: i.e.\n\n   {s} pages/common/tar.md", .{args[0]});
         try usage(args[0], std.io.getStdOut().writer());
-        try showEnvVarsAndDefaults(allocator, std.io.getStdOut().writer());
+        try showEnvVarsAndDefaults(std.io.getStdOut().writer());
         return 1;
     }
 
@@ -180,12 +162,7 @@ pub fn main() !u8 {
         language = try setupLanguage(allocator);
         errdefer allocator.free(language);
     }
-    if (res.args.spanishdb) |s| {
-        global_config.database_spanish_conjugation_fix = s;
-    } else {
-        try setupSpanishConjugationDbPath(allocator);
-        errdefer allocator.free(global_config.database_spanish_conjugation_fix);
-    }
+
     var port: usize = 0;
     if (res.args.port) |n| {
         port = n;

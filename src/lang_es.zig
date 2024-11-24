@@ -107,7 +107,7 @@ const summary_replacements = [_]Replacement{
 const sr: []const Replacement = summary_replacements[0..];
 const pr: []const Replacement = process_replacements[0..];
 
-pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr, .fixPostTranslation = &conjugateToThird };
+pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr, .fixPostTranslation = &identityFn };
 // To add a new translation the above line would be replaced by
 // pub const l_xx: LangReplacement = .{ .summary_replacement = sr, .process_replacement = pr, .fixPostTranslation = &identityFn};
 
@@ -118,64 +118,9 @@ pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replace
 // https://github.com/tldr-pages/tldr/blob/main/contributing-guides/style-guide.md#spanish-specific-rules
 
 const std = @import("std");
-const lmdb = @import("lmdb-zig");
 
 const Child = std.process.Child;
 const ArrayList = std.ArrayList;
 const logErr = tldr_base.logErr;
 
 const CombinedError = tldr_base.CombinedError;
-
-/// Receives a sentence that can be converted to present singular third person if the first word is a verb
-/// and is in indefinitive or imperative second singular person.
-/// You are responsible for freeing the return value that is a transformation from the sentence.
-pub fn conjugateToThird(allocator: std.mem.Allocator, sentence: []const u8) CombinedError![]const u8 {
-    const index_separator = std.mem.indexOf(u8, sentence, " ") orelse {
-        return allocator.dupe(u8, sentence);
-    };
-    const verb = sentence[0..index_separator];
-    defer allocator.free(verb);
-
-    var buffer: [80]u8 = undefined;
-    @memcpy(buffer[0..verb.len], verb);
-
-    const env = lmdb.Env.init(db_verbs_path.*, .{}) catch |err| {
-        if (err == lmdb.Mdb_Err.no_such_file_or_dir) {
-            var helper: []u8 = undefined;
-            if (builtin.os.tag == .windows) {
-                helper = try std.fmt.allocPrint(allocator, "Hint: Download {s}, decompress it and place it in {s}", .{
-                    "https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz",
-                    db_verbs_path.*,
-                });
-            } else {
-                helper = try std.fmt.allocPrint(allocator, "\n{s}\n\n{s}\n\n{s}{s}\n{s}{s}", .{
-                    "Hint: Run the following commands and try again:",
-                    "HERE=$(pwd) && mkdir -p /tmp/tldr_translation.db && cd $_ && curl --remote-name https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz && gunzip data.mdb.gz && cd $HERE",
-                    "If it fails, please download and decompress ",
-                    "https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz",
-                    "and place it in ",
-                    db_verbs_path.*,
-                });
-            }
-            logErr("Make sure you have access to the verb conjugation db.\n `{s}` was not found\n{s}\n", .{ db_verbs_path.*, helper });
-        }
-        return err;
-    };
-    defer env.deinit();
-
-    const tx = try env.begin(.{});
-    errdefer tx.deinit();
-    const db = try tx.open(null, .{});
-    defer db.close(env);
-    const normalize = try allocator.dupe(u8, verb);
-    defer allocator.free(normalize);
-    const wasUpper = std.ascii.isUpper(verb[0]);
-    normalize[0] = std.ascii.toLower(normalize[0]);
-    const conjugation = tx.get(db, normalize) catch verb;
-    if (wasUpper) {
-        const result = try std.fmt.allocPrint(allocator, "{c}{s}{s}", .{ std.ascii.toUpper(conjugation[0]), conjugation[1..], sentence[index_separator..] });
-        return result;
-    }
-    const result = try std.fmt.allocPrint(allocator, "{s}{s}", .{ conjugation, sentence[index_separator..] });
-    return result;
-}

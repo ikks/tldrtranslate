@@ -6,17 +6,13 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const clap = b.dependency("clap", .{});
-    const lmdb_zig = b.dependency("lmdb-zig", .{});
-
     const exe = b.addExecutable(.{
         .name = "tldrtranslate",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
-    exe.root_module.addImport("lmdb-zig", lmdb_zig.module("lmdb-zig-mod"));
     exe.root_module.addImport("clap", clap.module("clap"));
-    exe.linkLibrary(lmdb_zig.artifact("lmdb-zig"));
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
