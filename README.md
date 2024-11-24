@@ -123,3 +123,13 @@ If you need to postprocess a translation, you can follow what was done for spani
 # Resources
 
 * [Verbs conversion](https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz)
+
+# TODO
+
+[ ] Documentation to add a new language
+[ ] Add -p --preview option , instead of writing the file, show in stdout
+[ ] Add colors to the stdout output
+[ ] Make sure Windows is supported
+[ ] Make sure macOS is supported
+[ ] Automate releases for different platforms
+[ ] Continuous Delivery
