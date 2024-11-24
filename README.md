@@ -2,40 +2,40 @@
 
 This is a helper to translate tldr pages, the list of supported languages is:
 
-  * fr
-  * ar
-  * bn
-  * ar
-  * ca
-  * cs
-  * da
-  * de
-  * es
-  * fa
-  * fi
-  * hi
-  * id
-  * it
-  * ja
-  * ko
-  * pl
-  * pt_BR
-  * pt_PT
-  * ro
-  * ru
-  * sv
-  * th
-  * uk
-  * zh
-  * zh_TW
+* ar  
+* bn  
+* ca  
+* cs  
+* da  
+* de  
+* es  
+* fa  
+* fi  
+* fr  
+* hi  
+* id  
+* it  
+* ja  
+* ko  
+* nl  
+* pl  
+* pt_BR  
+* pt_PT  
+* ro  
+* ru  
+* sv  
+* th  
+* uk  
+* zh  
+* zh_TW
 
 The workflow is:
- * `tldrtranslate` translates from english to the language you designate
+ * `tldrtranslate` translates from English to the language you desire.
  * With your team, you can fix the output and make a pull request.
 
 ## Download and usage
 
- * Download for your platform:
+ * Download for your platform.
  * Download argostranslate API and argostranslate and make the API run.
  * Download a helper for spanish (not needed for other languages).
 
