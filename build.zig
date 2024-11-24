@@ -16,7 +16,6 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("lmdb-zig", lmdb_zig.module("lmdb-zig-mod"));
     exe.root_module.addImport("clap", clap.module("clap"));
-    exe.linkLibrary(lmdb_zig.artifact("lmdb-zig"));
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);

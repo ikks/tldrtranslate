@@ -24,8 +24,8 @@
     // internet connectivity.
     .dependencies = .{
         .@"lmdb-zig" = .{
-            .url = "https://github.com/john-g4lt/lmdb-zig/archive/refs/tags/v0.1.0.tar.gz",
-            .hash = "1220a44f2880d150589664ee936da3b856674d732cbf02b4714a7282fa752facad97",
+            .url = "https://github.com/ikks/lmdb-zig/archive/19313d4d0c9f42331e372d9d1ec15a833c48b82a.tar.gz",
+            .hash = "122080ccfcb1664a246b12a02c5c8ad6e99905606f4c4aa5ed3b385070a30484595f",
         },
         .clap = .{
             .url = "https://github.com/Hejsil/zig-clap/archive/refs/tags/0.9.1.tar.gz",
