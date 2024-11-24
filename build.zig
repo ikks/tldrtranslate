@@ -1,20 +1,25 @@
 const std = @import("std");
 
-pub fn build(b: *std.Build) void {
+const targets: []const std.Target.Query = &.{
+    .{ .cpu_arch = .aarch64, .os_tag = .macos },
+    .{ .cpu_arch = .x86_64, .os_tag = .macos },
+    .{ .cpu_arch = .aarch64, .os_tag = .linux },
+    .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .musl },
+    .{ .cpu_arch = .x86_64, .os_tag = .windows },
+};
+
+pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
 
     const optimize = b.standardOptimizeOption(.{});
 
     const clap = b.dependency("clap", .{});
-    const lmdb_zig = b.dependency("lmdb-zig", .{});
-
     const exe = b.addExecutable(.{
         .name = "tldrtranslate",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
-    exe.root_module.addImport("lmdb-zig", lmdb_zig.module("lmdb-zig-mod"));
     exe.root_module.addImport("clap", clap.module("clap"));
     b.installArtifact(exe);
 
@@ -53,4 +58,30 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
+
+    try distFn(b, clap);
+}
+
+fn distFn(b: *std.Build, clap: *std.Build.Dependency) !void {
+    const dist_step = b.step("dist", "Create distributable Files");
+    for (targets) |t| {
+        const exe_dist = b.addExecutable(.{
+            .name = "tldrtranslate",
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.resolveTargetQuery(t),
+            .optimize = .ReleaseSmall,
+        });
+
+        exe_dist.root_module.addImport("clap", clap.module("clap"));
+
+        const target_output = b.addInstallArtifact(exe_dist, .{
+            .dest_dir = .{
+                .override = .{
+                    .custom = try t.zigTriple(b.allocator),
+                },
+            },
+        });
+
+        dist_step.dependOn(&target_output.step);
+    }
 }
