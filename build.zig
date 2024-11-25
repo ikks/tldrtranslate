@@ -17,6 +17,10 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    const lmdb = b.dependency("lmdb", .{
+        .target = target,
+        .optimize = optimize,
+    });
     const exe = b.addExecutable(.{
         .name = "tldrtranslate",
         .root_source_file = b.path("src/main.zig"),
@@ -24,6 +28,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     exe.root_module.addImport("clap", clap.module("clap"));
+    exe.root_module.addImport("lmdb", lmdb.module("lmdb"));
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);

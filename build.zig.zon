@@ -10,6 +10,10 @@
             .url = "https://github.com/Hejsil/zig-clap/archive/refs/tags/0.9.1.tar.gz",
             .hash = "122062d301a203d003547b414237229b09a7980095061697349f8bef41be9c30266b",
         },
+        .lmdb = .{
+            .url = "https://github.com/Syndica/lmdb-zig/archive/93ee129e4556c0d8af19abb0261530f0444dd577.tar.gz",
+            .hash = "1220e27a4e98d4f93b1f29c7c38985a4818e6cd135525379e23087c20c8de4a3034b",
+        },
     },
     .paths = .{
         "build.zig",

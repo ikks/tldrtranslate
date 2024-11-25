@@ -1,11 +1,12 @@
 const std = @import("std");
+const LmdbError = @import("lmdb_sup.zig").LmdbError;
 
 const Allocator = @import("std").mem.Allocator;
 
 pub var global_config = GlobalConfiguration{};
 pub const logErr = std.log.err;
 pub const original_language = "en";
-pub const CombinedError = error{ OutOfMemory, AllocationFailed };
+pub const CombinedError = LmdbError || error{ OutOfMemory, AllocationFailed };
 
 pub const GlobalConfiguration = struct {
     translation_api: []const u8 = &.{},
