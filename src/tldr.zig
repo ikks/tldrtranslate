@@ -24,12 +24,17 @@ const translation_api = &tldr_base.global_config.translation_api;
 pub const ArgosApiError = error{LangNotFound};
 
 /// Translates a TLDR file to the specified language using the replacements for the language
-/// Writes the result to the language specified directory.
+/// Writes the result to the corresponding file in the TLDR tree hierarchy if not dry run.
 pub fn processFile(
     allocator: Allocator,
+    /// Source file
     filename: []const u8,
+    /// The pairs of replacements for a given language
     replacements: LangReplacement,
+    /// The language to translate to
     language: []const u8,
+    /// if true does not write the file, just shown in stdout
+    dryrun: bool,
 ) !void {
     const file = try fs.cwd().openFile(filename, .{});
     defer file.close();
@@ -40,12 +45,16 @@ pub fn processFile(
     };
     const filename_language = try std.fmt.allocPrint(allocator, "{s}.{s}{s}", .{ filename[0 .. ipages + 5], language, filename[ipages + 5 ..] });
     defer allocator.free(filename_language);
-    const file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
-        logErr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
-        return;
-    };
-    defer file_out.close();
-
+    var file_out: fs.File = undefined;
+    if (dryrun) {
+        file_out = std.io.getStdOut();
+    } else {
+        file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
+            logErr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
+            return;
+        };
+        errdefer file.close();
+    }
     var buf_reader = std.io.bufferedReader(file.reader());
     const reader = buf_reader.reader();
 
@@ -54,26 +63,29 @@ pub fn processFile(
 
     const writer = line.writer();
     var line_no: usize = 0;
+    var buf = std.io.bufferedWriter(file_out.writer());
+    var buf_w = buf.writer();
+
     while (reader.streamUntilDelimiter(writer, '\n', null)) {
         // Clear the line so we can reuse it.
         defer line.clearRetainingCapacity();
         line_no += 1;
         if (line.items.len < 3) {
-            try file_out.writer().print("{s}\n", .{line.items});
+            try buf_w.print("{s}\n", .{line.items});
             continue;
         }
         switch (line.items[0]) {
-            '-' => {
-                try processDescription(allocator, line.items, language, replacements.fixPostTranslation, file_out.writer());
-            },
             '>' => {
-                try processSummary(allocator, line.items, replacements.summary_replacement, language, replacements.fixPostTranslation, file_out.writer());
+                try processSummary(allocator, line.items, replacements.summary_replacement, language, replacements.fixPostTranslation, buf_w);
+            },
+            '-' => {
+                try processDescription(allocator, line.items, language, replacements.fixPostTranslation, buf_w);
             },
             '`' => {
-                try processExecution(line.items, replacements.process_replacement, file_out.writer());
+                try processExecution(line.items, replacements.process_replacement, buf_w);
             },
             else => {
-                try file_out.writer().print("{s}\n", .{line.items});
+                try buf_w.print("{s}\n", .{line.items});
             },
         }
     } else |err| switch (err) {
@@ -84,9 +96,29 @@ pub fn processFile(
         },
         else => return err, // Propagate error
     }
+    try buf.flush();
+    if (!dryrun) {
+        file_out.close();
+    }
 }
 
-fn processSummary(allocator: Allocator, source_string: []const u8, summary_replacements: []const Replacement, language: []const u8, postFn: PostProcess, writer: std.fs.File.Writer) !void {
+/// The summary starts with `> ` the contents are translated and there are common replacements
+/// for the common ones, as More information. The result is written to the writer and includes
+/// a newline at the end
+fn processSummary(
+    /// The allocations are self contained in this function
+    allocator: Allocator,
+    /// We receive the line complete, including the >
+    source_string: []const u8,
+    /// Pair of replacements allowed for Summary
+    summary_replacements: []const Replacement,
+    /// Language to translate to
+    language: []const u8,
+    /// Post process function to make adjustments to the translation
+    postFn: PostProcess,
+    /// a handle to write the translation to
+    writer: anytype,
+) !void {
     var buffer: [1024]u8 = undefined;
     const result: ReplaceAndSize = replaceMany(source_string[0..], summary_replacements, buffer[0..]);
     if (result.replacements > 0) {
@@ -99,7 +131,16 @@ fn processSummary(allocator: Allocator, source_string: []const u8, summary_repla
     }
 }
 
-fn processExecution(source_string: []const u8, replacements: []const Replacement, writer: std.fs.File.Writer) !void {
+/// The execution starts with  ```, no translation is made, just the replacements are applied
+/// the result is written to `writer` with a newline at the end.
+fn processExecution(
+    /// The line is received complete with the special characters and
+    source_string: []const u8,
+    /// Pairs of possible replacements to be used
+    replacements: []const Replacement,
+    /// a handle to write the sentence with the replacements applied
+    writer: anytype,
+) !void {
     var buffer: [1024]u8 = undefined;
     const result = replaceMany(source_string, replacements, buffer[0..]);
     try writer.print("{s}", .{buffer[0..result.size]});
@@ -108,9 +149,24 @@ fn processExecution(source_string: []const u8, replacements: []const Replacement
     }
 }
 
+/// The description starts with `- `.  Translates `source_string` to `language` and postprocess the result with `postFn`, the
+/// result is written to writer with a newline at the end.
 const processDescription = translateLine;
 
-fn translateLine(allocator: Allocator, source_string: []const u8, language: []const u8, postFn: PostProcess, writer: std.fs.File.Writer) !void {
+/// translates `source_string` to `language` and postprocess the result with `postFn`, the
+/// result is written to writer with a newline at the end
+fn translateLine(
+    /// The allocations are self contained in this function
+    allocator: Allocator,
+    /// string to be translated
+    source_string: []const u8,
+    /// target translation language
+    language: []const u8,
+    /// A function to apply to the translated sentence
+    postFn: PostProcess,
+    /// A handle to write the result of the translation and post process function
+    writer: anytype,
+) !void {
     var sentence: []u8 = undefined;
     sentence = try translateLineApi(allocator, source_string[2..], language);
     defer allocator.free(sentence);
@@ -128,19 +184,40 @@ fn translateLine(allocator: Allocator, source_string: []const u8, language: []co
     }
 }
 
-fn translateLineApi(allocator: Allocator, source_string: []const u8, language: []const u8) ![]u8 {
+/// Invokes API Argos Translator with the `source_string` to be translated to `language`
+/// and returns the translation as a string.  Allocates memory that you must release. Expects the
+/// original language to be `en`. If it's not able to reach the API, offers instructions
+/// and propagates the error to finish the program.
+fn translateLineApi(
+    /// Allocator to return a new string with the translation
+    allocator: Allocator,
+    /// text to be translated
+    source_string: []const u8,
+    /// Target language
+    language: []const u8,
+) ![]u8 {
     var client = http.Client{ .allocator = allocator };
     defer client.deinit();
     const uri = try std.Uri.parse(translation_api.*);
     const escaped_for_json = try escapeJsonString(source_string, allocator);
     defer allocator.free(escaped_for_json);
-    const payload = try std.fmt.allocPrint(allocator, "{{\"text\": \"{s}\", \"from_lang\": \"{s}\", \"to_lang\": \"{s}\"}}", .{ escaped_for_json, original_language, language[0..2] });
+    const payload = try std.fmt.allocPrint(allocator, "{{\"text\": \"{s}\", \"from_lang\": \"{s}\", \"to_lang\": \"{s}\"}}", .{
+        escaped_for_json,
+        original_language,
+        language[0..2],
+    });
     defer allocator.free(payload);
 
     var buf: [1024]u8 = undefined;
     var req = client.open(.POST, uri, .{ .server_header_buffer = &buf }) catch |err| {
         if (err == std.posix.ConnectError.ConnectionRefused) {
-            logErr("Make sure you have an API Argos Translate Running in {s}.\n Follow instructions from {s} to install and make it run in another window. It takes a few seconds to be available.", .{ translation_api.*, "https://github.com/Jaro-c/Argos-API" });
+            logErr("{s}{s}.\n {s}{s} {s}", .{
+                "Make sure you have an API Argos Translate Running in ",
+                translation_api.*,
+                "Follow instructions from ",
+                "to install and make it run in another window. It takes a few seconds to be available.",
+                "https://github.com/Jaro-c/Argos-API",
+            });
         }
         return err;
     };
@@ -158,7 +235,12 @@ fn translateLineApi(allocator: Allocator, source_string: []const u8, language: [
     defer allocator.free(body);
 
     if (req.response.status != .ok) {
-        logErr("Make sure you have language `{s}` installed, if your API has it installed, check the next.\n Status:{d}\nPayload:{s}\nResponse:{s}", .{ language, req.response.status, payload, body });
+        logErr("Make sure you have language `{s}` installed, if your API has it installed, check the next.\n Status:{d}\nPayload:{s}\nResponse:{s}", .{
+            language,
+            req.response.status,
+            payload,
+            body,
+        });
         return ArgosApiError.LangNotFound;
     }
 
