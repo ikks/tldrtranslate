@@ -118,7 +118,7 @@ If your language is not supported by Argos-translate, you can [open an issue in 
 * [X] Make sure macOS is supported.
 * [X] Automate releases for different platforms.
 * [ ] Documentation to add a new language.
-* [ ] Add -p --preview option , instead of writing the file, show in stdout.
+* [X] Add -p --preview option , instead of writing the file, show in stdout.
 * [ ] Add colors to the stdout output.
 * [ ] Continuous Delivery.
 * [ ] Postprocess Spanish translation to use singular third person when argos-translate outputs infinitive or imperative translation verb form.

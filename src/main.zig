@@ -22,6 +22,7 @@ const global_config = &tldr_base.global_config;
 const help_args =
     \\  -h, --help                   Display this help and exit
     \\  -L, --languages              Show the list of supported languages
+    \\  -y, --dryrun                 Outputs to stdout instead of writing the file
     \\  -l, --lang <str>             Target translation language
     \\  -p, --port <usize>           Port of Argos Translate API, defaults to 8000
     \\  -u, --url <str>              URL of the Argos Translate API, defaults to localhost
@@ -127,6 +128,8 @@ pub fn main() !u8 {
 
     const params = comptime clap.parseParamsComptime(help_args);
     var diag = clap.Diagnostic{};
+    var dryrun: bool = false;
+
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
         .allocator = allocator,
@@ -141,6 +144,9 @@ pub fn main() !u8 {
         try usage(args[0], std.io.getStdOut().writer());
         try showEnvVarsAndDefaults(std.io.getStdOut().writer());
         return 0;
+    }
+    if (res.args.dryrun != 0) {
+        dryrun = true;
     }
     if (res.args.languages != 0) {
         try std.io.getStdOut().writer().print("\n{s}: Starts a tldr translation for you to review\n", .{args[0]});
@@ -192,7 +198,7 @@ pub fn main() !u8 {
     }
 
     const lang_replacement = replacements.get(language).?;
-    processFile(allocator, res.positionals[0], lang_replacement, language) catch |err| {
+    processFile(allocator, res.positionals[0], lang_replacement, language, dryrun) catch |err| {
         if (err == std.posix.OpenError.FileNotFound) {
             logErr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md\nCulprit was {s}", .{args[1]});
         }

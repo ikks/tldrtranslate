@@ -31,6 +31,7 @@ pub fn processFile(
     filename: []const u8,
     replacements: LangReplacement,
     language: []const u8,
+    dryrun: bool,
 ) !void {
     const file = try fs.cwd().openFile(filename, .{});
     defer file.close();
@@ -41,12 +42,16 @@ pub fn processFile(
     };
     const filename_language = try std.fmt.allocPrint(allocator, "{s}.{s}{s}", .{ filename[0 .. ipages + 5], language, filename[ipages + 5 ..] });
     defer allocator.free(filename_language);
-    const file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
-        logErr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
-        return;
-    };
-    defer file_out.close();
-
+    var file_out: fs.File = undefined;
+    if (dryrun) {
+        file_out = std.io.getStdOut();
+    } else {
+        file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
+            logErr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
+            return;
+        };
+        errdefer file.close();
+    }
     var buf_reader = std.io.bufferedReader(file.reader());
     const reader = buf_reader.reader();
 
@@ -84,6 +89,9 @@ pub fn processFile(
             }
         },
         else => return err, // Propagate error
+    }
+    if (!dryrun) {
+        file_out.close();
     }
 }
 
