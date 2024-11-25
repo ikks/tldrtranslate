@@ -216,7 +216,7 @@ pub fn main() !u8 {
     const lang_replacement = replacements.get(language).?;
     processFile(allocator, res.positionals[0], lang_replacement, language) catch |err| {
         if (err == std.posix.OpenError.FileNotFound) {
-            logErr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md\nCulprit was {s}", .{args[1]});
+            logErr("Make sure the path includes the tldr root, target and pagename, like in `pages/common/tar.md`\n   {s} was not found.", .{res.positionals[0]});
         }
         return err;
     };

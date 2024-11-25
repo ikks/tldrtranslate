@@ -17,7 +17,16 @@ pub fn getwordordefault(
     const myDb = try ret(c.mdb_dbi_open, .{ txn, null, 0x40000 });
 
     var key = val(key_name);
-    const get_value: c.MDB_val = try ret(c.mdb_get, .{ txn, myDb, &key });
+    var get_value: c.MDB_val = undefined;
+    if (ret(c.mdb_get, .{ txn, myDb, &key })) |found| {
+        get_value = found;
+    } else |err| {
+        if (err == error.MDB_NOTFOUND) {
+            get_value = key;
+        } else {
+            return err;
+        }
+    }
 
     return allocator.dupe(u8, fromVal(get_value));
 }
@@ -122,7 +131,7 @@ pub fn result(int: isize) LmdbError!void {
         else => error.UnspecifiedErrorCode,
     };
     return e catch |ee| {
-        @import("std").debug.print("{}", .{ee});
+        // @import("std").debug.print("{}\n", .{ee});
         return ee;
     };
 }

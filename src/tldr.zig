@@ -16,7 +16,6 @@ const ReplaceAndSize = tldr_base.ReplaceAndSize;
 const LangReplacement = tldr_base.LangReplacement;
 const identityFn = tldr_base.identityFn;
 const PostProcess = tldr_base.PostProcess;
-const conjugateToThird = lang_es.conjugateToThird;
 const original_language = tldr_base.original_language;
 const replaceMany = tldr_base.replaceMany;
 
