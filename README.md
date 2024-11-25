@@ -61,12 +61,14 @@ You can set the following ENV_VARS to change the default configurations:
 *  TLDR_LANG: defaults to `es` (spanish) 
 *  TLDR_ARGOS_API_URLBASE: defaults to `localhost`
 *  TLDR_ARGOS_API_PORT: Defaults to `8000`
+*  TLDR_ES_DB_PATH: Your spanish db to present singular verb tweak, has no default
 
 each one of them is superseeded by the option of the command line
 
 * -l es
 * -u localhost
 * -p 8000
+* -d path/to/tldr_translation.db
 
 ## Building from source
 
@@ -125,4 +127,4 @@ If you want to have consistent translations, there are some words that can be re
 * [X] Add -p --preview option , instead of writing the file, show in stdout.
 * [ ] Add colors to the stdout output.
 * [ ] Continuous Delivery.
-* [ ] Postprocess Spanish translation to use singular third person when argos-translate outputs infinitive or imperative translation verb form.
+* [X] Postprocess Spanish translation to use singular third person when argos-translate outputs infinitive or imperative translation verb form.
