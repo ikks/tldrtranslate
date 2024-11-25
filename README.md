@@ -103,6 +103,10 @@ If your language is in the list of supported languages by Argos-translate, just 
 
 If your language is not supported by Argos-translate, you can [open an issue in Argos-translate](https://github.com/argosopentech/argos-translate/discussions/91).
 
+## Adding common replacements for your language
+
+If you want to have consistent translations, there are some words that can be replaced befor the translation process, please look [here](docs/language_replacements.md).
+
 ## Acknowledgments
 
 * [Argos-translate](https://github.com/argosopentech/argos-translate) with tons of work.
@@ -117,7 +121,7 @@ If your language is not supported by Argos-translate, you can [open an issue in 
 * [X] Make sure Windows is supported.
 * [X] Make sure macOS is supported.
 * [X] Automate releases for different platforms.
-* [ ] Documentation to add a new language.
+* [X] Documentation to add a new language.
 * [X] Add -p --preview option , instead of writing the file, show in stdout.
 * [ ] Add colors to the stdout output.
 * [ ] Continuous Delivery.

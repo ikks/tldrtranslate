@@ -4,7 +4,9 @@ const tldr = @import("tldr.zig");
 const lang_es = @import("lang_es.zig");
 const clap = @import("clap");
 
-const l_es = lang_es.l_es;
+// Importing Language replacements
+const l_es = lang_es.l_es; // Spanish replacements import
+
 const processFile = tldr.processFile;
 
 const LangReplacement = tldr_base.LangReplacement;
@@ -18,6 +20,14 @@ const logErr = tldr_base.logErr;
 const Writer = std.fs.File.Writer;
 
 const global_config = &tldr_base.global_config;
+
+/// Set replacements for languages
+fn lang_with_replacements(replacements: anytype) !void {
+
+    // Add your language replacements below this line, better alphabetically
+
+    try replacements.put("es", l_es); // Spanish replacements usage
+}
 
 const help_args =
     \\  -h, --help                   Display this help and exit
@@ -186,10 +196,11 @@ pub fn main() !u8 {
         allocator,
     );
     defer replacements.deinit();
-    try replacements.put("es", l_es);
+
     for (supported_langs) |lang| {
         try replacements.put(lang[0..], l_default);
     }
+    try lang_with_replacements(&replacements);
 
     if (!replacements.contains(language)) {
         logErr("We do not support language `{s}` yet.", .{language});
