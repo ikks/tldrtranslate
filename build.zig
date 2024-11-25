@@ -13,7 +13,10 @@ pub fn build(b: *std.Build) !void {
 
     const optimize = b.standardOptimizeOption(.{});
 
-    const clap = b.dependency("clap", .{});
+    const clap = b.dependency("clap", .{
+        .target = target,
+        .optimize = optimize,
+    });
     const exe = b.addExecutable(.{
         .name = "tldrtranslate",
         .root_source_file = b.path("src/main.zig"),
