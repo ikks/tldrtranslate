@@ -22,6 +22,8 @@ pub const Replacement = struct {
     replacement: []const u8,
 };
 
+pub const automated_translation_warning = "Please review your work prior making a pull request to TLDR. Let's have translations with good quality for your language.";
+
 pub const no_replacements = [_]Replacement{};
 
 /// function signature applied after a translation depending on the language

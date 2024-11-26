@@ -21,6 +21,8 @@ const Writer = std.fs.File.Writer;
 
 const global_config = &tldr_base.global_config;
 
+const automated_translation_warning = tldr_base.automated_translation_warning;
+
 /// Set replacements for languages
 fn lang_with_replacements(replacements: anytype) !void {
 
@@ -32,6 +34,7 @@ fn lang_with_replacements(replacements: anytype) !void {
 const help_args =
     \\  -h, --help                   Display this help and exit
     \\  -L, --languages              Show the list of supported languages
+    \\  -s, --supresswarning         Stop showing the warning about automatic translation
     \\  -y, --dryrun                 Outputs to stdout instead of writing the file
     \\  -l, --lang <str>             Target translation language
     \\  -p, --port <usize>           Port of Argos Translate API, defaults to 8000
@@ -139,6 +142,7 @@ pub fn main() !u8 {
     const params = comptime clap.parseParamsComptime(help_args);
     var diag = clap.Diagnostic{};
     var dryrun: bool = false;
+    var show_warning: bool = true;
 
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
@@ -154,6 +158,9 @@ pub fn main() !u8 {
         try usage(args[0], std.io.getStdOut().writer());
         try showEnvVarsAndDefaults(std.io.getStdOut().writer());
         return 0;
+    }
+    if (res.args.supresswarning != 0) {
+        show_warning = false;
     }
     if (res.args.dryrun != 0) {
         dryrun = true;
@@ -208,6 +215,9 @@ pub fn main() !u8 {
         return 1;
     }
 
+    if (show_warning) {
+        try std.io.getStdOut().writer().print("\n  \u{001b}[91;5;31mAttention\u{001b}[m: {s}\n\n", .{automated_translation_warning});
+    }
     const lang_replacement = replacements.get(language).?;
     processFile(allocator, res.positionals[0], lang_replacement, language, dryrun) catch |err| {
         if (err == std.posix.OpenError.FileNotFound) {
@@ -215,6 +225,9 @@ pub fn main() !u8 {
         }
         return err;
     };
+    if (show_warning and dryrun) {
+        try std.io.getStdOut().writer().print("\n  \u{001b}[91;5;31mAttention\u{001b}[m: {s}\n\n", .{automated_translation_warning});
+    }
 
     return 0;
 }
