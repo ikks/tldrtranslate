@@ -124,5 +124,6 @@ If you want to have consistent translations, there are some words that can be re
 * [X] Documentation to add a new language.
 * [X] Add -p --preview option , instead of writing the file, show in stdout.
 * [ ] Add colors to the stdout output.
-* [ ] Continuous Delivery.
+* [X] Continuous integration.
+* [ ] Continuous delivery.
 * [ ] Postprocess Spanish translation to use singular third person when argos-translate outputs infinitive or imperative translation verb form.

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+
+if [[ ! $# -eq 1 ]]
+then
+	echo Make sure the tag was created and coincides wit build.zig.zon
+	echo
+	echo Release notes are ready
+	exit 1
+fi
+
+TAG=$1
+
+echo $TAG
+
+exit 1
+cp zig-out/aarch64-linux/tldrtranslate /tmp/upload/tldrtranslate-aarch64-linux
+cp zig-out/aarch64-macos/tldrtranslate /tmp/upload/tldrtranslate-aarch64-macos
+cp zig-out/x86_64-macos/tldrtranslate /tmp/upload/tldrtranslate-x86_64-macos
+cp zig-out/x86_64-linux-musl/tldrtranslate /tmp/upload/tldrtranslate-x86_64-linux
+cp zig-out/x86_64-windows/tldrtranslate.exe /tmp/upload/tldrtranslate.exe
+
+gh release upload $TAG /tmp/upload/*
