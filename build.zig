@@ -67,19 +67,37 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
 
-    try distFn(b, clap);
+    try distFn(b, optimize, clap);
 }
 
-fn distFn(b: *std.Build, clap: *std.Build.Dependency) !void {
+///Build the app for each supported architecture
+fn distFn(
+    /// Build object
+    b: *std.Build,
+    /// Options common to all archs-os
+    optimize: std.builtin.OptimizeMode,
+    /// clap is multiplatform, we can reuse it
+    clap: *std.Build.Dependency,
+) !void {
     const dist_step = b.step("dist", "Create distributable Files");
+    var filename: []u8 = undefined;
     for (targets) |t| {
+
+        // lmdb depends on the platform to be properly built
+        const lmdb = b.dependency("lmdb", .{
+            .target = b.resolveTargetQuery(t),
+            .optimize = optimize,
+        });
+        filename = try distName(b.allocator, "tldrtranslate", t);
         const exe_dist = b.addExecutable(.{
-            .name = "tldrtranslate",
+            .name = filename,
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(t),
             .optimize = .ReleaseSmall,
         });
+        defer b.allocator.free(filename);
 
+        exe_dist.root_module.addImport("lmdb", lmdb.module("lmdb"));
         exe_dist.root_module.addImport("clap", clap.module("clap"));
 
         const target_output = b.addInstallArtifact(exe_dist, .{
@@ -92,4 +110,21 @@ fn distFn(b: *std.Build, clap: *std.Build.Dependency) !void {
 
         dist_step.dependOn(&target_output.step);
     }
+}
+
+/// Builds a name based on the architecture and os and using the prefix, allocates memory
+// that needs to be freed
+fn distName(
+    /// Deallocate the memory we use to return the result
+    allocator: std.mem.Allocator,
+    /// Name of the program
+    prefix: []const u8,
+    /// Architecture and OS expected to name the resulting file
+    target: std.Target.Query,
+) std.mem.Allocator.Error![]u8 {
+    const arch_name = if (target.cpu_arch) |arch| @tagName(arch) else "native";
+    const os_name = if (target.os_tag) |os_tag| @tagName(os_tag) else "native";
+
+    const result = try std.fmt.allocPrint(allocator, "{s}-{s}-{s}", .{ prefix, arch_name, os_name });
+    return result;
 }
