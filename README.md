@@ -65,9 +65,9 @@ You can set the following ENV_VARS to change the default configurations:
 
 each one of them is superseeded by the option of the command line
 
-* -l es
-* -u localhost
-* -p 8000
+* -L es
+* -H localhost
+* -P 8000
 * -d path/to/tldr_translation.db
 
 ## Building from source

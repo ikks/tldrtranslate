@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const config = @import("config");
 const tldr_base = @import("tldr-base.zig");
 const tldr = @import("tldr.zig");
@@ -34,13 +35,13 @@ fn lang_with_replacements(replacements: anytype) !void {
 
 const help_args =
     \\  -h, --help                   Display this help and exit
-    \\  -L, --languages              Show the list of supported languages and exit
+    \\  -l, --languages              Show the list of supported languages and exit
     \\  -v, --version                Show version and exit
     \\  -s, --supresswarning         Stop showing the warning about automatic translation
     \\  -y, --dryrun                 Outputs to stdout instead of writing the file
-    \\  -l, --lang <str>             Target translation language
-    \\  -p, --port <usize>           Port of Argos Translate API, defaults to 8000
-    \\  -u, --url <str>              URL of the Argos Translate API, defaults to localhost
+    \\  -L, --lang <str>             Target translation language
+    \\  -P, --port <usize>           Port of Argos Translate API, defaults to 8000
+    \\  -H, --host <str>             name or IP of the Argos Translate API host, defaults to localhost
     \\  -d, --spanishdb <str>        Path where the db verbs reside
     \\  <str> pages/common/sample.md Path to a file to be translated
 ;
@@ -90,20 +91,20 @@ fn setupTranslationApi(allocator: Allocator, host: []const u8, port: usize) !voi
     } else {
         tldr_api_port = try std.fmt.allocPrint(allocator, "{}", .{port});
     }
-    var tldr_api_urlbase: []const u8 = undefined;
+    var tldr_api_host: []const u8 = undefined;
     if (host.len == 0) {
         if (std.process.getEnvVarOwned(allocator, "TLDR_ARGOS_API_URLBASE")) |value| {
-            tldr_api_urlbase = value;
+            tldr_api_host = value;
         } else |err| {
             if (err != std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound) {
                 return err;
             }
-            tldr_api_urlbase = "localhost";
+            tldr_api_host = "localhost";
         }
     } else {
-        tldr_api_urlbase = host[0..];
+        tldr_api_host = host[0..];
     }
-    const api = try std.fmt.allocPrint(allocator, "http://{s}:{s}/translate", .{ tldr_api_urlbase, tldr_api_port });
+    const api = try std.fmt.allocPrint(allocator, "http://{s}:{s}/translate", .{ tldr_api_host, tldr_api_port });
     global_config.translation_api = api;
     if (port != 0)
         allocator.free(tldr_api_port);
@@ -177,7 +178,7 @@ pub fn main() !u8 {
         return 0;
     }
     if (res.args.version != 0) {
-        try std.io.getStdOut().writer().print("{s}: {s}\n", .{ args[0], config.version });
+        try std.io.getStdOut().writer().print("{s}: {s} - {s}\n", .{ args[0], config.version, @tagName(builtin.target.os.tag) });
         return 0;
     }
     if (res.args.supresswarning != 0) {
@@ -221,7 +222,7 @@ pub fn main() !u8 {
 
     var host: []const u8 = "";
 
-    if (res.args.url) |s| {
+    if (res.args.host) |s| {
         host = s[0..];
     }
     try setupTranslationApi(allocator, host, port);

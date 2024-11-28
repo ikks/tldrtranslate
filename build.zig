@@ -9,7 +9,7 @@ const targets: []const std.Target.Query = &.{
 };
 
 pub fn build(b: *std.Build) !void {
-    const version = "0.2.0";
+    const version = "0.3.0";
     const options = b.addOptions();
     options.addOption([]const u8, "version", version);
 
@@ -72,13 +72,15 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
 
-    try distFn(b, optimize, clap);
+    try distFn(b, options, optimize, clap);
 }
 
 ///Build the app for each supported architecture
 fn distFn(
     /// Build object
     b: *std.Build,
+    /// Options to include version
+    options: *std.Build.Step.Options,
     /// Options common to all archs-os
     optimize: std.builtin.OptimizeMode,
     /// clap is multiplatform, we can reuse it
@@ -104,6 +106,7 @@ fn distFn(
 
         exe_dist.root_module.addImport("lmdb", lmdb.module("lmdb"));
         exe_dist.root_module.addImport("clap", clap.module("clap"));
+        exe_dist.root_module.addOptions("config", options);
 
         const target_output = b.addInstallArtifact(exe_dist, .{
             .dest_dir = .{
