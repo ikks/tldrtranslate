@@ -9,6 +9,10 @@ const targets: []const std.Target.Query = &.{
 };
 
 pub fn build(b: *std.Build) !void {
+    const version = "0.2.0";
+    const options = b.addOptions();
+    options.addOption([]const u8, "version", version);
+
     const target = b.standardTargetOptions(.{});
 
     const optimize = b.standardOptimizeOption(.{});
@@ -29,6 +33,7 @@ pub fn build(b: *std.Build) !void {
     });
     exe.root_module.addImport("clap", clap.module("clap"));
     exe.root_module.addImport("lmdb", lmdb.module("lmdb"));
+    exe.root_module.addOptions("config", options);
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);

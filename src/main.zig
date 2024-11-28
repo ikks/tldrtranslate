@@ -1,4 +1,5 @@
 const std = @import("std");
+const config = @import("config");
 const tldr_base = @import("tldr-base.zig");
 const tldr = @import("tldr.zig");
 const lang_es = @import("lang_es.zig");
@@ -33,7 +34,8 @@ fn lang_with_replacements(replacements: anytype) !void {
 
 const help_args =
     \\  -h, --help                   Display this help and exit
-    \\  -L, --languages              Show the list of supported languages
+    \\  -L, --languages              Show the list of supported languages and exit
+    \\  -v, --version                Show version and exit
     \\  -s, --supresswarning         Stop showing the warning about automatic translation
     \\  -y, --dryrun                 Outputs to stdout instead of writing the file
     \\  -l, --lang <str>             Target translation language
@@ -172,6 +174,10 @@ pub fn main() !u8 {
     if (res.args.help != 0) {
         try usage(args[0], std.io.getStdOut().writer());
         try showEnvVarsAndDefaults(std.io.getStdOut().writer());
+        return 0;
+    }
+    if (res.args.version != 0) {
+        try std.io.getStdOut().writer().print("{s}: {s}\n", .{ args[0], config.version });
         return 0;
     }
     if (res.args.supresswarning != 0) {
