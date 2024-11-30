@@ -176,11 +176,35 @@ fn translateLine(
     };
     defer allocator.free(post_processed_line);
 
-    const last_char_idx = post_processed_line.len - 1;
-    if (post_processed_line[last_char_idx] == '\n') {
-        try writer.print("{s}{s}", .{ source_string[0..2], post_processed_line });
+    //Sometimes argos-translate changes ` by '
+    const needs_to_replace = std.mem.count(u8, source_string, "`") != std.mem.count(u8, post_processed_line, "`");
+    var fixed_sentence: []u8 = undefined;
+    const fix_replacements = [_]Replacement{
+        Replacement{ .original = "'", .replacement = "`" },
+        Replacement{ .original = " &apos; ", .replacement = "`" },
+    };
+    if (needs_to_replace) {
+        fixed_sentence = try allocator.alloc(u8, source_string.len * 2);
+        const count = replaceMany(post_processed_line, &fix_replacements, fixed_sentence);
+        std.log.info("replaced {d} single quote(s) by backticks when translating {s} to {s}\n", .{
+            count.replacements,
+            source_string,
+            fixed_sentence[0..count.size],
+        });
+        fixed_sentence = fixed_sentence[0..count.size];
     } else {
-        try writer.print("{s}{s}\n", .{ source_string[0..2], post_processed_line });
+        fixed_sentence = @constCast(post_processed_line);
+    }
+
+    const last_char_idx = fixed_sentence.len - 1;
+    if (fixed_sentence[last_char_idx] == '\n') {
+        try writer.print("{s}{s}", .{ source_string[0..2], fixed_sentence });
+    } else {
+        try writer.print("{s}{s}\n", .{ source_string[0..2], fixed_sentence });
+    }
+
+    if (needs_to_replace) {
+        allocator.free(fixed_sentence);
     }
 }
 
