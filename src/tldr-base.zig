@@ -4,7 +4,6 @@ const LmdbError = @import("lmdb_sup.zig").LmdbError;
 const Allocator = @import("std").mem.Allocator;
 
 pub var global_config = GlobalConfiguration{};
-pub const logErr = std.log.err;
 pub const original_language = "en";
 pub const CombinedError = LmdbError || error{ OutOfMemory, AllocationFailed };
 
@@ -71,6 +70,13 @@ pub const supported_default_languages = [_][]const u8{
     "zh",
     "zh_TW",
 };
+
+pub fn logErr(
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    std.log.err("\u{001b}[91;5;31m*\u{001b}[m: " ++ format, args);
+}
 
 pub fn replaceMany(original: []const u8, replacements: []const Replacement, output: []u8) ReplaceAndSize {
     var found: usize = 0;
