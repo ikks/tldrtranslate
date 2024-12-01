@@ -176,15 +176,21 @@ fn translateLine(
     };
     defer allocator.free(post_processed_line);
 
-    //Sometimes argos-translate changes ` by '
+    //Sometimes argos-translate changes ` by other characters and expressions, trying to fix it...
     const needs_to_replace = std.mem.count(u8, source_string, "`") != std.mem.count(u8, post_processed_line, "`");
     var fixed_sentence: []u8 = undefined;
     const fix_replacements = [_]Replacement{
         Replacement{ .original = "'", .replacement = "`" },
         Replacement{ .original = " &apos; ", .replacement = "`" },
+        Replacement{ .original = " &quot; ", .replacement = "`" },
+        Replacement{ .original = "«", .replacement = "`" },
+        Replacement{ .original = "»", .replacement = "`" },
+        Replacement{ .original = "“ ", .replacement = "`" },
+        Replacement{ .original = "“", .replacement = "`" },
+        Replacement{ .original = "”", .replacement = "`" },
     };
     if (needs_to_replace) {
-        fixed_sentence = try allocator.alloc(u8, source_string.len * 2);
+        fixed_sentence = try allocator.alloc(u8, source_string.len * 3);
         const count = replaceMany(post_processed_line, &fix_replacements, fixed_sentence);
         std.log.info("replaced {d} single quote(s) by backticks when translating {s} to {s}\n", .{
             count.replacements,
