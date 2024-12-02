@@ -123,6 +123,14 @@ fn setupSpanishConjugationDbPath(allocator: Allocator) !void {
     }
 }
 
+fn setupColorOutput(allocator: Allocator) void {
+    if (std.process.getEnvVarOwned(allocator, "NO_COLOR")) |_| {
+        global_config.output_with_colors = false;
+    } else |_| {
+        global_config.output_with_colors = true;
+    }
+}
+
 pub fn showSupportedLangs(writer: Writer) !void {
     try writer.print("\nSupported languages:\n", .{});
     for (supported_langs) |lang| {
@@ -132,11 +140,12 @@ pub fn showSupportedLangs(writer: Writer) !void {
 }
 
 pub fn showEnvVarsAndDefaults(writer: Writer) !void {
-    try writer.print("\nYou can set the following ENV_VARS to change the default configurations:\n{s}\n{s}\n{s}\n{s}\n\n", .{
+    try writer.print("\nYou can set the following ENV_VARS to change the default configurations:\n{s}\n{s}\n{s}\n{s}\n{s}\n\n", .{
         "  TLDR_LANG: defaults to es (spanish)",
         "  TLDR_ARGOS_API_URLBASE: defaults to localhost",
         "  TLDR_ARGOS_API_PORT: Defaults to 8000",
         "  TLDR_ES_DB_PATH: has no default",
+        "  NO_COLOR: to not use colors on dry-run",
     });
 }
 

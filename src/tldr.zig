@@ -21,6 +21,7 @@ const original_language = tldr_base.original_language;
 const replaceMany = tldr_base.replaceMany;
 
 const translation_api = &tldr_base.global_config.translation_api;
+const output_with_colors = &tldr_base.global_config.output_with_colors;
 
 pub const ArgosApiError = error{LangNotFound};
 
@@ -98,11 +99,15 @@ pub fn processFile(
         try file_out.writeAll(output_lines.items);
         file_out.close();
     } else {
-        try writeHighlighted(
-            allocator,
-            std.io.getStdOut(),
-            output_lines.items,
-        );
+        if (output_with_colors.*) {
+            try writeHighlighted(
+                allocator,
+                std.io.getStdOut(),
+                output_lines.items,
+            );
+        } else {
+            _ = try std.io.getStdOut().write(output_lines.items);
+        }
     }
 }
 
