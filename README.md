@@ -1,8 +1,8 @@
 # tldrtranshelper
 
-This is a helper to translate tldr pages, the list of supported languages is:
-
 https://github.com/user-attachments/assets/b81b3895-aa8d-443b-84d5-057d9ecc4041
+
+This is a helper to translate [tldr pages](https://tldr.sh/), the list of supported languages is:
 
 * ar
 * bn
@@ -57,7 +57,13 @@ tldrtranslate -l it pages/common/argos-translate.md
 
 You can use relative or absolute paths, as soon as you include the hierarchy from `pages` directory.
 
+`tldrtranslate` takes into account the following env vars:
+
+* LANG: if set and with a supported language, is used unless TLDR_LANG is set or -L option is passed
+* NO_COLOR: if set, the output with -y option will not show colors
+
 You can set the following ENV_VARS to change the default configurations:
+
 *  TLDR_LANG: defaults to `es` (spanish) 
 *  TLDR_ARGOS_API_URLBASE: defaults to `localhost`
 *  TLDR_ARGOS_API_PORT: Defaults to `8000`
@@ -116,16 +122,5 @@ If you want to have consistent translations, there are some words that can be re
 
 # Resources
 
-* [Verbs conversion](https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz)
+* [Spanish verbs conversion](https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz)
 
-# TODO
-
-* [X] Make sure Windows is supported.
-* [X] Make sure macOS is supported.
-* [X] Automate releases for different platforms.
-* [X] Documentation to add a new language.
-* [X] Add -p --preview option , instead of writing the file, show in stdout.
-* [ ] Add colors to the stdout output.
-* [X] Continuous integration.
-* [X] Continuous Delivery.
-* [X] Postprocess Spanish translation to use singular third person when argos-translate outputs infinitive or imperative translation verb form.

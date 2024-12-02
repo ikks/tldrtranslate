@@ -9,7 +9,7 @@ const targets: []const std.Target.Query = &.{
 };
 
 pub fn build(b: *std.Build) !void {
-    const version = "0.3.0";
+    const version = "1.0.0";
     const options = b.addOptions();
     options.addOption([]const u8, "version", version);
 
