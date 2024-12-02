@@ -3,6 +3,8 @@ const builtin = @import("builtin");
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
 
+/// Escapes an string to be sent to an API that receives json
+/// New memory must be freed by the caller
 pub fn escapeJsonString(input: []const u8, allocator: Allocator) ![]u8 {
     var result = try allocator.alloc(u8, input.len * 2);
     var index: usize = 0;
@@ -42,7 +44,7 @@ pub fn escapeJsonString(input: []const u8, allocator: Allocator) ![]u8 {
     return result[0..index]; // Return the escaped string
 }
 
-//github.com:jiripospisil/drtl
+// Original version from https://github.com:jiripospisil/drtl
 pub fn writeHighlighted(allocator: Allocator, stdout: File, content: []const u8) !void {
     const tty_conf = std.io.tty.detectConfig(std.io.getStdErr());
     var stdout_bw = std.io.bufferedWriter(stdout.writer());
@@ -60,16 +62,15 @@ pub fn writeHighlighted(allocator: Allocator, stdout: File, content: []const u8)
             try stdout_w.print("{s}\n\n", .{s[2..]});
             try tty_conf.setColor(stdout_w, .reset);
         } else if (std.mem.startsWith(u8, s, ">")) {
-            try tty_conf.setColor(stdout_w, .dim);
-            try stdout_w.print("{s}\n\n", .{s[2..]});
+            try highlightBackTick(s[2..], stdout_w, tty_conf, .magenta, .yellow);
             try tty_conf.setColor(stdout_w, .reset);
         } else if (std.mem.startsWith(u8, s, "-")) {
-            try tty_conf.setColor(stdout_w, .green);
-            try stdout_w.print("{s}\n", .{s});
+            try highlightBackTick(s[0..], stdout_w, tty_conf, .green, .yellow);
             try tty_conf.setColor(stdout_w, .reset);
         } else if (std.mem.startsWith(u8, s, "`")) {
             const ss = s[1..(s.len - 1)];
             const output = try allocator.alloc(u8, ss.len);
+            defer allocator.free(output);
 
             _ = std.mem.replace(u8, ss, "}}", "{{", output);
 
@@ -93,4 +94,19 @@ pub fn writeHighlighted(allocator: Allocator, stdout: File, content: []const u8)
 
     try tty_conf.setColor(stdout_w, .reset);
     try stdout_bw.flush();
+}
+
+fn highlightBackTick(content: []const u8, stdout_w: anytype, tty_conf: std.io.tty.Config, color1: std.io.tty.Color, color2: std.io.tty.Color) !void {
+    var itt = std.mem.tokenizeScalar(u8, content, '`');
+    var flip = content[0] != '`';
+    while (itt.next()) |sss| {
+        if (flip) {
+            try tty_conf.setColor(stdout_w, color1);
+        } else {
+            try tty_conf.setColor(stdout_w, color2);
+        }
+        flip = !flip;
+        try stdout_w.writeAll(sss);
+    }
+    try stdout_w.writeAll("\n\n");
 }
