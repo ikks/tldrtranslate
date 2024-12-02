@@ -10,7 +10,7 @@ pub const CombinedError = LmdbError || error{ OutOfMemory, AllocationFailed };
 pub const GlobalConfiguration = struct {
     translation_api: []const u8 = &.{},
     database_spanish_conjugation_fix: []const u8 = &.{},
-    output_with_colors: bool = true,
+    output_with_colors: bool = false,
 };
 
 pub const ReplaceAndSize = struct {

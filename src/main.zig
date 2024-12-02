@@ -17,7 +17,6 @@ const supported_langs = tldr_base.supported_default_languages;
 
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
-const print = std.debug.print;
 const logErr = tldr_base.logErr;
 const Writer = std.fs.File.Writer;
 
@@ -125,9 +124,9 @@ fn setupSpanishConjugationDbPath(allocator: Allocator) !void {
 
 fn setupColorOutput(allocator: Allocator) void {
     if (std.process.getEnvVarOwned(allocator, "NO_COLOR")) |_| {
-        global_config.output_with_colors = false;
+        global_config.*.output_with_colors = false;
     } else |_| {
-        global_config.output_with_colors = true;
+        global_config.*.output_with_colors = true;
     }
 }
 
@@ -181,6 +180,7 @@ pub fn main() !u8 {
     };
     defer res.deinit();
 
+    setupColorOutput(allocator);
     if (res.args.help != 0) {
         try usage(args[0], std.io.getStdOut().writer());
         try showEnvVarsAndDefaults(std.io.getStdOut().writer());
@@ -259,7 +259,11 @@ pub fn main() !u8 {
     }
 
     if (show_warning) {
-        try std.io.getStdOut().writer().print("\n  \u{001b}[91;5;31mAttention\u{001b}[m: {s}\n\n", .{automated_translation_warning});
+        if (global_config.output_with_colors) {
+            try std.io.getStdOut().writer().print("\n  \u{001b}[91;5;31mAttention\u{001b}[m: {s}\n\n", .{automated_translation_warning});
+        } else {
+            try std.io.getStdOut().writer().print("\n  Attention: {s}\n\n", .{automated_translation_warning});
+        }
     }
     const lang_replacement = replacements.get(language).?;
     processFile(allocator, res.positionals[0], lang_replacement, language, dryrun) catch |err| {
@@ -269,7 +273,11 @@ pub fn main() !u8 {
         return err;
     };
     if (show_warning and dryrun) {
-        try std.io.getStdOut().writer().print("\n  \u{001b}[91;5;31mAttention\u{001b}[m: {s}\n\n", .{automated_translation_warning});
+        if (global_config.output_with_colors) {
+            try std.io.getStdOut().writer().print("\n  \u{001b}[91;5;31mAttention\u{001b}[m: {s}\n\n", .{automated_translation_warning});
+        } else {
+            try std.io.getStdOut().writer().print("\n  Attention: {s}\n\n", .{automated_translation_warning});
+        }
     }
 
     return 0;
