@@ -5,6 +5,7 @@ const tldr_base = @import("tldr-base.zig");
 const tldr = @import("tldr.zig");
 const lang_es = @import("lang_es.zig");
 const clap = @import("clap");
+const globals = @import("globals.zig");
 
 // Importing Language replacements
 const l_es = lang_es.l_es; // Spanish replacements import
@@ -20,7 +21,7 @@ const StringHashMap = std.StringHashMap;
 const logErr = tldr_base.logErr;
 const Writer = std.fs.File.Writer;
 
-const global_config = &tldr_base.global_config;
+const global_config = &globals.global_config;
 
 const automated_translation_warning = tldr_base.automated_translation_warning;
 
@@ -170,6 +171,7 @@ pub fn main() !u8 {
     var dryrun: bool = false;
     var show_warning: bool = true;
 
+    setupColorOutput(allocator);
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
         .allocator = allocator,

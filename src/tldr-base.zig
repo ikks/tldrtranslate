@@ -1,17 +1,12 @@
 const std = @import("std");
+const globals = @import("globals.zig");
+const global_config = &globals.global_config;
 const LmdbError = @import("lmdb_sup.zig").LmdbError;
 
 const Allocator = @import("std").mem.Allocator;
 
-pub var global_config = GlobalConfiguration{};
 pub const original_language = "en";
 pub const CombinedError = LmdbError || error{ OutOfMemory, AllocationFailed };
-
-pub const GlobalConfiguration = struct {
-    translation_api: []const u8 = &.{},
-    database_spanish_conjugation_fix: []const u8 = &.{},
-    output_with_colors: bool = false,
-};
 
 pub const ReplaceAndSize = struct {
     replacements: usize,
@@ -76,7 +71,11 @@ pub fn logErr(
     comptime format: []const u8,
     args: anytype,
 ) void {
-    std.log.err("\u{001b}[91;5;31m*\u{001b}[m: " ++ format, args);
+    if (global_config.*.output_with_colors) {
+        std.log.err("\u{001b}[91;5;31m*\u{001b}[m: " ++ format, args);
+    } else {
+        std.log.err(format, args);
+    }
 }
 
 pub fn replaceMany(original: []const u8, replacements: []const Replacement, output: []u8) ReplaceAndSize {

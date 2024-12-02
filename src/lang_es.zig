@@ -119,7 +119,7 @@ pub const l_es: LangReplacement = .{ .summary_replacement = sr, .process_replace
 const std = @import("std");
 const lmdb_helper = @import("lmdb_sup.zig");
 
-const db_verbs_path = &tldr_base.global_config.database_spanish_conjugation_fix;
+const db_verbs_path = &@import("globals.zig").global_config.database_spanish_conjugation_fix;
 const get_verb = lmdb_helper.getwordordefault;
 const logErr = tldr_base.logErr;
 const CombinedError = tldr_base.CombinedError;

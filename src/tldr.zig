@@ -1,5 +1,6 @@
 const std = @import("std");
 const tldr_base = @import("tldr-base.zig");
+const globals = @import("globals.zig");
 const lang_es = @import("lang_es.zig");
 const escapeJsonString = @import("extern.zig").escapeJsonString;
 const writeHighlighted = @import("extern.zig").writeHighlighted;
@@ -20,8 +21,8 @@ const PostProcess = tldr_base.PostProcess;
 const original_language = tldr_base.original_language;
 const replaceMany = tldr_base.replaceMany;
 
-const translation_api = &tldr_base.global_config.translation_api;
-const output_with_colors = &tldr_base.global_config.output_with_colors;
+const translation_api = &globals.global_config.translation_api;
+const output_with_colors = &globals.global_config.output_with_colors;
 
 pub const ArgosApiError = error{LangNotFound};
 
@@ -106,7 +107,7 @@ pub fn processFile(
                 output_lines.items,
             );
         } else {
-            _ = try std.io.getStdOut().write(output_lines.items);
+            _ = try std.io.getStdOut().writer().print("{s}", .{output_lines.items});
         }
     }
 }
