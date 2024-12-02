@@ -198,6 +198,11 @@ pub fn main() !u8 {
         try usage(args[0], std.io.getStdOut().writer());
         try showEnvVarsAndDefaults(std.io.getStdOut().writer());
         return 1;
+    } else {
+        _ = std.mem.indexOf(u8, res.positionals[0], "pages") orelse {
+            logErr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md, missing pages in {s}", .{res.positionals[0]});
+            return 1;
+        };
     }
 
     if (res.args.lang) |s| {
