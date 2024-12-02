@@ -2,6 +2,7 @@ const std = @import("std");
 const tldr_base = @import("tldr-base.zig");
 const lang_es = @import("lang_es.zig");
 const escapeJsonString = @import("extern.zig").escapeJsonString;
+const writeHighlighted = @import("extern.zig").writeHighlighted;
 
 const testing = std.testing;
 const ArrayList = std.ArrayList;
@@ -36,9 +37,6 @@ pub fn processFile(
     /// if true does not write the file, just shown in stdout
     dryrun: bool,
 ) !void {
-    const file = try fs.cwd().openFile(filename, .{});
-    defer file.close();
-
     const ipages = std.mem.indexOf(u8, filename, "pages") orelse {
         logErr("Make sure the path includes the tldr root, target and pagename: pages/common/tar.md", .{});
         return;
@@ -46,15 +44,13 @@ pub fn processFile(
     const filename_language = try std.fmt.allocPrint(allocator, "{s}.{s}{s}", .{ filename[0 .. ipages + 5], language, filename[ipages + 5 ..] });
     defer allocator.free(filename_language);
     var file_out: fs.File = undefined;
-    if (dryrun) {
-        file_out = std.io.getStdOut();
-    } else {
-        file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
-            logErr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
-            return;
-        };
-        errdefer file.close();
-    }
+    var output_lines = ArrayList(u8).init(allocator);
+    defer output_lines.deinit();
+
+    var buf_w = output_lines.writer();
+
+    const file = try fs.cwd().openFile(filename, .{});
+    defer file.close();
     var buf_reader = std.io.bufferedReader(file.reader());
     const reader = buf_reader.reader();
 
@@ -63,8 +59,6 @@ pub fn processFile(
 
     const writer = line.writer();
     var line_no: usize = 0;
-    var buf = std.io.bufferedWriter(file_out.writer());
-    var buf_w = buf.writer();
 
     while (reader.streamUntilDelimiter(writer, '\n', null)) {
         // Clear the line so we can reuse it.
@@ -96,9 +90,19 @@ pub fn processFile(
         },
         else => return err, // Propagate error
     }
-    try buf.flush();
     if (!dryrun) {
+        file_out = fs.cwd().createFile(filename_language, .{}) catch |err| {
+            logErr("Make sure the target path exists {s}\n{}", .{ filename_language, err });
+            return;
+        };
+        try file_out.writeAll(output_lines.items);
         file_out.close();
+    } else {
+        try writeHighlighted(
+            allocator,
+            std.io.getStdOut(),
+            output_lines.items,
+        );
     }
 }
 
