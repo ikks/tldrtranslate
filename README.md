@@ -1,8 +1,10 @@
-# tldrtranshelper
+# TLDR Helper Translation
+
+This is a helper to translate [tldr pages](https://tldr.sh/). Collaborators can introduce this tool in the workflow to speed up the [translation process](https://github.com/tldr-pages/tldr/blob/main/CONTRIBUTING.md#translations).  Take a look to see how the tool works.
 
 https://github.com/user-attachments/assets/b81b3895-aa8d-443b-84d5-057d9ecc4041
 
-This is a helper to translate [tldr pages](https://tldr.sh/), the list of supported languages is:
+## Supported languages
 
 * ar
 * bn
@@ -39,7 +41,7 @@ The workflow is:
 ## Download and usage
 
  * Download for your platform from the [releases page](https://github.com/ikks/tldrtranslate/releases), take the latest one.
- * Download argostranslate API and argostranslate and make the API run.
+ * Download [Argos-API](https://github.com/Jaro-c/Argos-API) and [argos-translate](https://github.com/argosopentech/argos-translate) and make the API run.
 
 If you are having problems getting the API and argos-translate to run, please ask 
 in https://app.element.io/#/room/#tldr-pages:matrix.org , maybe there is someone
@@ -50,17 +52,17 @@ that can put a server for your use.
 Suppose you aim to translate `pages/common/argos-translate.md` to `it` , you will run:
 
 ``` 
-tldrtranslate -l it pages/common/argos-translate.md
+tldrtranslate -L it pages/common/argos-translate.md
 ```
 
 `tldrtranslate` will output the translation to `pages.it/common/argos-translate.md`, overwriting the file if it existed
 
-You can use relative or absolute paths, as soon as you include the hierarchy from `pages` directory.
+You can use relative or absolute paths, as soon as you include the hierarchy beginning with the `pages` directory.
 
-`tldrtranslate` takes into account the following env vars:
+`tldrtranslate` takes into account the following ENV_VARS:
 
 * LANG: if set and with a supported language, is used unless TLDR_LANG is set or -L option is passed
-* NO_COLOR: if set, the output with -y option will not show colors
+* NO_COLOR: if set, the output with -y option will not show colors respecting original format
 
 You can set the following ENV_VARS to change the default configurations:
 
@@ -90,13 +92,13 @@ zig build
 Under `zig-out/bin/` should be present `tldrtranslate` for your use.
 
 * [argos-API](https://github.com/Jaro-c/Argos-API) translate instance running, in port 8000
-* For spanish data to tweak the verb inflection
+* If you are translating to Spanish, [download data](https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz) to tweak the verb inflection and use the `-d path/to/directory/holding/data`, if there is an error, you will be instructed on how to install the inflection db.
 
-Feel free to clone and modify to suit your needs.
+Feel free to clone and modify to suit your needs. Ideas, bug reports and PRs are welcome.
 
 ## Running an Argos API instance
 
-You will need to have python, argos-translate and api argos-translate or Docker and some Gigas of space for the models and the needed infrastructure.
+You will need to have Python, argos-translate and api-argos or Docker and some Gigas of space for the models and the needed infrastructure.
 
 Have an [Argos-API](https://github.com/Jaro-c/Argos-API) locally. To run it, with your
 language pairs you can issue on your virtualenv:
@@ -105,22 +107,21 @@ language pairs you can issue on your virtualenv:
 fastapi dev main
 ```
 
-## Building a new language
+## About languages
 
-If your language is in the list of supported languages by Argos-translate, just download the required package to your running environment.  For example for portuguese `argospm install translate-en_pt`, is the same for PT or BR.
+### Adding a language
 
-If your language is not supported by Argos-translate, you can [open an issue in Argos-translate](https://github.com/argosopentech/argos-translate/discussions/91).
+If your language is in the list of supported languages by Argos-translate, just download the required package to your running argos-API environment.  For example, for portuguese `argospm install translate-en_pt`, which happens to be the same for both PT or BR.
 
-## Adding common replacements for your language
+If your language is not supported by argos-translate, you can [open an issue in Argos-translate](https://github.com/argosopentech/argos-translate/discussions/91).
 
-If you want to have consistent translations, there are some words that can be replaced befor the translation process, please look [here](docs/language_replacements.md).
+### Adding common replacements for your language
 
-## Acknowledgments
+If your will is to have consistent translations, there are some words that can be replaced before the translation process, please look [here](docs/language_replacements.md).
 
+## Resources
+
+* [Spanish verbs conversion](https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz). Based on Compjugador.  The data is covered by GPL and can be used optionally in the case of basic verbs inflection for spanish.
 * [Argos-translate](https://github.com/argosopentech/argos-translate) with tons of work.
-* Compjugador
-
-# Resources
-
-* [Spanish verbs conversion](https://igor.tamarapatino.org/tldrtranslate/resources/es/data.mdb.gz)
-
+* [Argos-API](https://github.com/Jaro-c/Argos-API)
+* [tldr pages](https://tldr.sh/)
