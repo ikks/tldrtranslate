@@ -4,6 +4,9 @@ if [[ ! $# -eq 1 ]]; then
 	echo Make sure the tag was created and coincides wit build.zig.zon
 	echo
 	echo Release notes are ready
+	gh release list
+	echo Run this command again with the release number to upload the artifacts,
+	zig build dist
 	exit 1
 fi
 
@@ -11,6 +14,6 @@ TAG=$1
 
 echo "$TAG"
 
-echo gh release upload "$TAG" zig-out/aarch64-linux/tldrtranslate-aarch64-linux \
+gh release upload "$TAG" zig-out/aarch64-linux/tldrtranslate-aarch64-linux \
 	zig-out/aarch64-macos/tldrtranslate-aarch64-macos \
 	zig-out/x86_64-linux-musl/tldrtranslate-x86_64-linux zig-out/x86_64-macos/tldrtranslate-x86_64-macos zig-out/x86_64-windows/tldrtranslate-x86_64-windows.exe
