@@ -255,8 +255,8 @@ fn translateLineApi(
                 "Make sure you have an API Argos Translate Running in ",
                 translation_api.*,
                 "Follow instructions from ",
-                "to install and make it run in another window. It takes a few seconds to be available.",
                 "https://github.com/Jaro-c/Argos-API",
+                "to install and make it run in another window. It takes a few seconds to be available.",
             });
         }
         return err;
