@@ -94,6 +94,7 @@ const process_replacements = [_]Replacement{
     Replacement{ .original = "{{owner}}", .replacement = "{{propietario}}" },
     Replacement{ .original = "{{group}}", .replacement = "{{grupo}}" },
     Replacement{ .original = "{{address}}", .replacement = "{{dirección}}" },
+    Replacement{ .original = "{{vm_id}}", .replacement = "{{id_mv}}" },
 };
 
 const summary_replacements = [_]Replacement{
