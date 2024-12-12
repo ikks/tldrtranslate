@@ -213,6 +213,10 @@ fn translateLine(
     }
 
     const last_char_idx = fixed_sentence.len - 1;
+
+    // Any description is required to start with capital letter according to tldr-lint TLDR015
+    fixed_sentence[0] = std.ascii.toUpper(fixed_sentence[0]);
+
     if (fixed_sentence[last_char_idx] == '\n') {
         try writer.print("{s}{s}", .{ source_string[0..2], fixed_sentence });
     } else {
